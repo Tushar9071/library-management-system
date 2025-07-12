@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+model users {
+  id                      Int                       @id @default(autoincrement())
+  email                   String
+  password                String?
+  userInfoId              userInfo?
+  session                 session?
+  books_history           books_history[]
+  submitted_books_history submitted_books_history[]
+  visibility              Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+
+  @@map("users")
+}
+
+model userInfo {
+  id         Int      @id @default(autoincrement())
+  firstname  String
+  lastname   String
+  Username   String
+  phone      String
+  gender     Gender
+  dob        DateTime
+  aadharNo   String
+  enrollNo   String
+  roleId     Int
+  visibility Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  userId     Int      @unique
+  user       users    @relation(fields: [userId], references: [id])
+  role       userRole @relation(fields: [roleId], references: [id])
+
+  @@map("userinfo")
+}
+
+model userRole {
+  id         Int      @id @default(autoincrement())
+  role       String   @unique
+  visibility Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userinfo userInfo[]
+
+  @@map("userrole")
+}
+
+model session {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      users    @relation(fields: [userId], references: [id])
+
+  @@map("session")
+}
+
+model book_master {
+  id           Int      @id @default(autoincrement())
+  title        String   @unique
+  author       String
+  Publisher    String?
+  edition      String?
+  publish_year Int?
+  subtitle     String?
+  category     String?
+  description  String?
+  total_books  Int      @default(1)
+  pages        Int?
+  avg_rating   Float?
+  rating_count Float?
+  penalty      Float?
+  language     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  books        books[]
+
+  @@map("book_master")
+}
+
+model books {
+  id                      Int                       @id @default(autoincrement())
+  book_master_id          Int
+  barcode                 String?
+  status                  String?                   @default("available")
+  location                String?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  book_master             book_master               @relation(fields: [book_master_id], references: [id])
+  books_history           books_history[]
+  submitted_books_history submitted_books_history[]
+
+  @@map("books")
+}
+
+model books_history {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  book_id     Int
+  borrow_date DateTime
+  last_date   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       users    @relation(fields: [user_id], references: [id])
+  books       books    @relation(fields: [book_id], references: [id])
+
+  @@map("books_history")
+}
+
+model submitted_books_history {
+  id             Int      @id @default(autoincrement())
+  user_id        Int
+  book_id        Int
+  borrow_date    DateTime
+  last_date      DateTime
+  submitted_date DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  users          users    @relation(fields: [user_id], references: [id])
+  books          books    @relation(fields: [book_id], references: [id])
+
+  @@map("submitted_books_history")
+}
