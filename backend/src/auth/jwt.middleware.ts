@@ -11,7 +11,6 @@ export class JwtMiddleware implements NestMiddleware {
   constructor(private jwtService: JwtService) {}
 
   use(req: Request & { user?: any }, res: Response, next: NextFunction) {
-    console.log(req.headers);
     const authHeader = req.headers['cookie'];
 
     if (!authHeader) {
