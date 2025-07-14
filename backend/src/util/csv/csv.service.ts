@@ -75,4 +75,7 @@ export class CsvService {
       count: data.length,
     };
   }
+  async getAllBook() {
+    return this.prisma.book_master.findMany();
+  }
 }

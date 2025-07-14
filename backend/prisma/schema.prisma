@@ -21,7 +21,7 @@ enum Gender {
 
 model users {
   id                      Int                       @id @default(autoincrement())
-  email                   String
+  email                   String                    @unique
   password                String?
   userInfoId              userInfo?
   session                 session?
@@ -35,22 +35,22 @@ model users {
 }
 
 model userInfo {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   firstname  String
   lastname   String
-  Username   String
-  phone      String
+  Username   String    @unique
+  phone      String    @unique
   gender     Gender
-  dob        DateTime
-  aadharNo   String
-  enrollNo   String
+  dob        DateTime?
+  aadharNo   String?   @unique
+  enrollNo   String?   @unique
   roleId     Int
-  visibility Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  userId     Int      @unique
-  user       users    @relation(fields: [userId], references: [id])
-  role       userRole @relation(fields: [roleId], references: [id])
+  visibility Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  userId     Int       @unique
+  user       users     @relation(fields: [userId], references: [id])
+  role       userRole  @relation(fields: [roleId], references: [id])
 
   @@map("userinfo")
 }
@@ -70,7 +70,7 @@ model userRole {
 model session {
   id        Int      @id @default(autoincrement())
   userId    Int      @unique
-  token     String
+  token     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      users    @relation(fields: [userId], references: [id])

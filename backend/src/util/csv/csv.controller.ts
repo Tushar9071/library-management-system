@@ -10,7 +10,7 @@ export class CsvController {
     // return this.csvService.getCsv();
   }
 
-  @Get('/readCsv')
+  @Get('readCsv')
   readCsv() {
     return this.csvService.csvData();
   }
@@ -18,5 +18,10 @@ export class CsvController {
   @Get('/setDataIndatabase')
   setDataIndatabase() {
     return this.csvService.setDataIndatabase();
+  }
+
+  @Get('allbook')
+  getAllBook() {
+    return this.csvService.getAllBook();
   }
 }
