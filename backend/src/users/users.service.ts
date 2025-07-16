@@ -17,7 +17,7 @@ export class UsersService {
     const hash = await bcrypt.hash(password, 10);
 
     const role = await this.prisma.userRole.findFirst({
-      where: { role: 'User' },
+      where: { role: 'public user' },
     });
 
     if (!role) {
@@ -32,7 +32,7 @@ export class UsersService {
           create: {
             ...info,
             dob: new Date(info.dob),
-            roleId: 4,
+            roleId: role.id,
           },
         },
       },

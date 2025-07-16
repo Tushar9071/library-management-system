@@ -1,7 +1,6 @@
 // This is a placeholder for user role. In a real application, this would come from your authentication system.
 let currentUserRole = "student"; // Can be "librarian", "student", or "public"
-
-export default function DashboardPage() {
+export default async function DashboardPage() {
   let welcomeMessage = "";
   let description = "";
 

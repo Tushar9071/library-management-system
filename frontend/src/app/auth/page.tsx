@@ -1,10 +1,8 @@
 "use client";
 import { useState } from "react";
 import type React from "react";
-
 import { ThemeToggle } from "@/components/theme-toggle"; // Import ThemeToggle
 import { Eye, EyeOff } from "lucide-react";
-
 export default function LibraryAuth() {
   const [activeTab, setActiveTab] = useState("login");
   const [isLoading, setIsLoading] = useState(false);
@@ -85,10 +83,34 @@ export default function LibraryAuth() {
     }, 1500);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const email = formData.get("email");
+    const password = formData.get("password");
+
     setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 2000);
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // <--- VERY IMPORTANT!
+      });
+
+      if (response.ok) {
+        window.location.href = "/dashboard";
+      } else {
+        console.error(await response.json());
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -186,6 +208,7 @@ export default function LibraryAuth() {
                     </div>
                     <input
                       id="email"
+                      name="email"
                       type="text"
                       placeholder="Enter your email or library ID"
                       className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
@@ -228,6 +251,7 @@ export default function LibraryAuth() {
                     </div>
                     <input
                       id="password"
+                      name="password"
                       type="password"
                       placeholder="Enter your password"
                       className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
@@ -240,6 +264,7 @@ export default function LibraryAuth() {
                   <div className="flex items-center">
                     <input
                       id="remember"
+                      name="remember"
                       type="checkbox"
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700"
                     />
@@ -352,6 +377,7 @@ export default function LibraryAuth() {
                     </label>
                     <input
                       id="firstName"
+                      name="firstName"
                       type="text"
                       placeholder="John"
                       className="w-full px-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
@@ -365,6 +391,7 @@ export default function LibraryAuth() {
                       Last Name
                     </label>
                     <input
+                      name="lastName"
                       id="lastName"
                       type="text"
                       placeholder="Doe"
@@ -395,6 +422,7 @@ export default function LibraryAuth() {
                       </svg>
                     </div>
                     <input
+                      name="email"
                       id="registerEmail"
                       type="email"
                       placeholder="john.doe@example.com"
@@ -425,6 +453,7 @@ export default function LibraryAuth() {
                       </svg>
                     </div>
                     <input
+                      name="phone"
                       id="phone"
                       type="tel"
                       placeholder="(555) 123-4567"
@@ -459,6 +488,7 @@ export default function LibraryAuth() {
                       </svg>
                     </div>
                     <input
+                      name="birthDate"
                       id="birthDate"
                       type="date"
                       className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
@@ -500,6 +530,7 @@ export default function LibraryAuth() {
                       </svg>
                     </div>
                     <input
+                      name="password"
                       id="registerPassword"
                       type={showPassword ? "text" : "password"}
                       placeholder="Create a strong password"
@@ -637,6 +668,7 @@ export default function LibraryAuth() {
                       </svg>
                     </div>
                     <input
+                      name="confirmPassword"
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm your password"
@@ -667,6 +699,7 @@ export default function LibraryAuth() {
 
                 <div className="flex items-center">
                   <input
+                    name="terms"
                     id="terms"
                     type="checkbox"
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700"
