@@ -98,7 +98,7 @@ export default function LibraryAuth() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include", // <--- VERY IMPORTANT!
+        credentials: "include",
       });
 
       if (response.ok) {
