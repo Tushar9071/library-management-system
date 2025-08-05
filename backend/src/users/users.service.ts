@@ -16,13 +16,25 @@ export class UsersService {
 
     const hash = await bcrypt.hash(password, 10);
 
-    const role = await this.prisma.userRole.findFirst({
-      where: { role: 'public user' },
-    });
+    // Determine role based on email domain
+    let role;
+    if (email.endsWith('@darshan.ac.in')) {
+      role = await this.prisma.userRole.findFirst({
+        where: { role: 'Student' },
+      });
+    } else {
+      role = await this.prisma.userRole.findFirst({
+        where: { role: 'public user' },
+      });
+    }
 
     if (!role) {
-      throw new BadRequestException(`Role 'User' not found`);
+      throw new BadRequestException(`Role not found`);
     }
+    const birthDateString = info.dob; // e.g. "2006-07-07"
+    const dob = birthDateString ? new Date(birthDateString) : null;
+
+    console.log(info)
 
     const user = await this.prisma.users.create({
       data: {
@@ -30,8 +42,11 @@ export class UsersService {
         password: hash,
         userInfoId: {
           create: {
-            ...info,
-            dob: new Date(info.dob),
+            firstname: info.firstName,
+            lastname: info.lastName,
+            phone: info.phone,
+            gender: info.gender,
+            dob: birthDateString,
             roleId: role.id,
           },
         },
@@ -47,7 +62,13 @@ export class UsersService {
   async findByEmail(email: string) {
     return this.prisma.users.findUnique({
       where: { email },
-      include: { userInfoId: true },
+      include: { 
+        userInfoId: {
+          include: {
+            role: true
+          }
+        }
+      },
     });
   }
 }

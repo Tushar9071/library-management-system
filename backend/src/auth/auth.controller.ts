@@ -26,18 +26,56 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: any, @Res({ passthrough: true }) res: Response) {
-    console.log(body);
+    // console.log(body);
 
     const user = await this.authService.validateUser(body.email, body.password);
     if (!user) throw new UnauthorizedException();
-    const { access_token } = await this.authService.login(user);
+    const userInfo = await this.authService.login(user);
 
-    res.cookie('token', access_token, { httpOnly: true });
-    return { id: user.id, email: user.email };
+    res.cookie('token', userInfo.access_token, { httpOnly: true });
+    return { id: user.id, email: user.email , role: userInfo.role };
+  }
+
+  @Post('google-login')
+  async googleLogin(
+    @Body() body: { email: string; token: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.googleLogin(body.email, body.token);
+    res.cookie('token', result.token, { httpOnly: true });
+    return { 
+      id: result.user.id, 
+      email: result.user.email, 
+      role: result.user.role,
+      message: 'Google login successful' 
+    };
+  }
+
+  @Post('github-login')
+  async githubLogin(
+    @Body() body: { email: string; token: string },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.githubLogin(body.email, body.token);
+    res.cookie('token', result.token, { httpOnly: true });
+    return { 
+      id: result.user.id, 
+      email: result.user.email, 
+      role: result.user.role,
+      message: 'GitHub login successful' 
+    };
   }
 
   @Post('logout')
-  async logout(@Req() req: any) {
-    return this.authService.logout(req.user.sub);
+  async logout(@Req() req: any, @Res({ passthrough: true }) res: Response) {
+    const token = req.cookies?.token;
+    
+    if (!token) {
+      res.clearCookie('token');
+      return { message: 'No active session found' };
+    }
+
+    res.clearCookie('token');
+    return this.authService.logout(token);
   }
 }

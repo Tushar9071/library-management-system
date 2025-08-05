@@ -5,6 +5,7 @@ import { CsvModule } from './util/csv/csv.module';
 import { PrismaModule } from './db/prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { UserRoleModule } from './user-role/user-role.module';
 import { JwtMiddleware } from './auth/jwt.middleware';
 import { JwtModule } from '@nestjs/jwt';
 @Module({
@@ -13,6 +14,7 @@ import { JwtModule } from '@nestjs/jwt';
     PrismaModule,
     AuthModule,
     UsersModule,
+    UserRoleModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },

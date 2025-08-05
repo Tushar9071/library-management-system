@@ -23,6 +23,7 @@ model users {
   id                      Int                       @id @default(autoincrement())
   email                   String                    @unique
   password                String?
+  providers               String?
   userInfoId              userInfo?
   session                 session?
   books_history           books_history[]
@@ -38,8 +39,8 @@ model userInfo {
   id         Int       @id @default(autoincrement())
   firstname  String
   lastname   String
-  Username   String    @unique
-  phone      String    @unique
+  Username   String?   @unique
+  phone      String?    @unique
   gender     Gender
   dob        DateTime?
   aadharNo   String?   @unique

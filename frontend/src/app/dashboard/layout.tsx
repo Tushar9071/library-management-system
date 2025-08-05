@@ -1,20 +1,29 @@
-"use client"
+"use client";
 
-import type React from "react"
-import Link from "next/link"
-import { BookOpen, Users, User, Home, Settings, LogOut, ChevronDown } from "lucide-react"
-import { cn } from "@/lib/utils"
+import type React from "react";
+import Link from "next/link";
+import {
+  BookOpen,
+  Users,
+  User,
+  Home,
+  Settings,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ThemeToggle } from "@/components/theme-toggle" // Import ThemeToggle
+} from "@/components/ui/dropdown-menu";
+import { ThemeToggle } from "@/components/theme-toggle"; // Import ThemeToggle
+import { logOut } from "@/hooks/auth.hooks";
 
 // This is a placeholder for user role. In a real application, this would come from your authentication system.
-const currentUserRole = "librarian" // Can be "librarian", "student", or "public"
+const currentUserRole = "librarian"; // Can be "librarian", "student", or "public"
 
 const navItems = {
   librarian: [
@@ -32,14 +41,15 @@ const navItems = {
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Browse Catalog", href: "/dashboard/catalog", icon: BookOpen },
   ],
-}
+};
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  const userNavigation = navItems[currentUserRole as keyof typeof navItems] || []
+  const userNavigation =
+    navItems[currentUserRole as keyof typeof navItems] || [];
 
   // In a real app, you'd check session here and redirect if unauthenticated
   // if (!userNavigation.length && currentUserRole !== "public") {
@@ -55,7 +65,9 @@ export default function DashboardLayout({
             <div className="bg-blue-600 dark:bg-blue-500 p-2 rounded-full shadow-md">
               <BookOpen className="text-white w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Library Portal</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Library Portal
+            </h2>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-2">
@@ -64,7 +76,7 @@ export default function DashboardLayout({
               key={item.name}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-colors",
+                "flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 // Add active state logic here based on current path
               )}
             >
@@ -82,7 +94,9 @@ export default function DashboardLayout({
       <main className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between shadow-sm">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            Dashboard
+          </h1>
           <div className="flex items-center gap-4">
             <ThemeToggle /> {/* Add ThemeToggle here */}
             <DropdownMenu>
@@ -99,13 +113,19 @@ export default function DashboardLayout({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem>
-                  <Link href="/dashboard/profile" className="flex items-center gap-2 w-full">
+                  <Link
+                    href="/dashboard/profile"
+                    className="flex items-center gap-2 w-full"
+                  >
                     <User className="w-4 h-4" />
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Link href="/dashboard/settings" className="flex items-center gap-2 w-full">
+                  <Link
+                    href="/dashboard/settings"
+                    className="flex items-center gap-2 w-full"
+                  >
                     <Settings className="w-4 h-4" />
                     <span>Settings</span>
                   </Link>
@@ -113,7 +133,7 @@ export default function DashboardLayout({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <button
-                    onClick={() => console.log("Logging out...")}
+                    onClick={() => logOut()}
                     className="flex items-center gap-2 w-full text-red-600 dark:text-red-400"
                   >
                     <LogOut className="w-4 h-4" />
@@ -129,5 +149,5 @@ export default function DashboardLayout({
         <div className="flex-1 p-6 overflow-auto">{children}</div>
       </main>
     </div>
-  )
+  );
 }

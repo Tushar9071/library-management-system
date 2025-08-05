@@ -3,6 +3,11 @@ import { useState } from "react";
 import type React from "react";
 import { ThemeToggle } from "@/components/theme-toggle"; // Import ThemeToggle
 import { Eye, EyeOff } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
+
+import { signInWithGithub, signInWithGoogle } from "@/firebase/auth/auth";
+import { auth } from "@/firebase/firebase-config";
+
 export default function LibraryAuth() {
   const [activeTab, setActiveTab] = useState("login");
   const [isLoading, setIsLoading] = useState(false);
@@ -69,18 +74,42 @@ export default function LibraryAuth() {
 
   const handleGoogleAuth = async () => {
     setIsLoading(true);
-    console.log("Initiating Google OAuth...");
-    setTimeout(() => {
+
+    // Show loading toast
+    const loadingToast = toast.loading("Connecting with Google...");
+
+    try {
+      await signInWithGoogle(auth);
+      // Success will be handled in the signInWithGoogle function
+      toast.dismiss(loadingToast);
+    } catch (error) {
+      console.error(error);
+      toast.error("Google login failed. Please try again.", {
+        id: loadingToast,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleGithubAuth = async () => {
     setIsLoading(true);
-    console.log("Initiating GitHub OAuth...");
-    setTimeout(() => {
+
+    // Show loading toast
+    const loadingToast = toast.loading("Connecting with GitHub...");
+
+    try {
+      await signInWithGithub(auth);
+      // Success will be handled in the signInWithGithub function
+      toast.dismiss(loadingToast);
+    } catch (error) {
+      console.error(error);
+      toast.error("GitHub login failed. Please try again.", {
+        id: loadingToast,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -93,6 +122,10 @@ export default function LibraryAuth() {
     const password = formData.get("password");
 
     setIsLoading(true);
+
+    // Show loading toast
+    const loadingToast = toast.loading("Signing you in...");
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -102,12 +135,99 @@ export default function LibraryAuth() {
       });
 
       if (response.ok) {
+        toast.success("Login successful!", { id: loadingToast });
+        const data = await response.json();
+        console.log(data);
+
+        localStorage.setItem(
+          "userData",
+          JSON.stringify({
+            id: data.id,
+            email: data.email,
+            role: data.role,
+          })
+        );
+
         window.location.href = "/dashboard";
       } else {
-        console.error(await response.json());
+        const errorData = await response.json();
+        toast.error(errorData.message || "Invalid credentials", {
+          id: loadingToast,
+        });
       }
     } catch (err) {
       console.error(err);
+      toast.error("Network error. Please try again.", { id: loadingToast });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const email = String(formData.get("email") || "");
+    const password = String(formData.get("password") || "");
+    const firstName = String(formData.get("firstName") || "");
+    const lastName = String(formData.get("lastName") || "");
+    const phone = String(formData.get("phone") || "");
+    const birthDate = String(formData.get("birthDate") || "");
+    const gender = String(formData.get("gender") || "");
+
+    setIsLoading(true);
+
+    // Show loading toast
+    const loadingToast = toast.loading("Creating your account...");
+
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          userInfo: {
+            firstName,
+            lastName,
+            phone,
+            birthDate,
+            gender,
+          },
+        }),
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        toast.success("Account created successfully! You can now sign in.", {
+          id: loadingToast,
+        });
+
+        // Reset form and switch to login tab
+        setPassword("");
+        setConfirmPassword("");
+        setPasswordStrength({
+          score: 0,
+          feedback: "",
+          color: "bg-gray-200",
+          textColor: "text-gray-500",
+        });
+
+        // Switch to login tab with a slight delay for better UX
+        setTimeout(() => {
+          setActiveTab("login");
+        }, 2000);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || "Something went wrong", {
+          id: loadingToast,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Network error. Please try again.", { id: loadingToast });
     } finally {
       setIsLoading(false);
     }
@@ -115,15 +235,12 @@ export default function LibraryAuth() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 relative">
-      {" "}
-      {/* Added relative positioning */}
+      <Toaster position="bottom-right" reverseOrder={false} />{" "}
       <div className="absolute top-4 right-4">
         {" "}
-        {/* Positioned ThemeToggle */}
         <ThemeToggle />
       </div>
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center items-center gap-4 mb-4">
             <div className="bg-blue-600 dark:bg-blue-500 p-3 rounded-full shadow-lg">
@@ -132,7 +249,8 @@ export default function LibraryAuth() {
                 width="32"
                 height="32"
                 viewBox="0 0 24 24"
-                className="text-white">
+                className="text-white"
+              >
                 <path
                   fill="currentColor"
                   d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm0 2h7v5h5v11H6zm2 8v2h8v-2zm0 4v2h5v-2z"
@@ -153,20 +271,22 @@ export default function LibraryAuth() {
           <div className="flex border-b border-gray-200 dark:border-slate-700">
             <button
               onClick={() => setActiveTab("login")}
-              className={`flex-1 py-4 px-4 text-sm font-medium text-center border-b-2 transition-all duration-200 ${
+              className={`flex-1 py-4 px-4 text-sm font-medium text-center border-b-2 transition-all duration-300 ${
                 activeTab === "login"
                   ? "border-blue-600 text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400"
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700"
-              }`}>
+              }`}
+            >
               Sign In
             </button>
             <button
               onClick={() => setActiveTab("register")}
-              className={`flex-1 py-4 px-4 text-sm font-medium text-center border-b-2 transition-all duration-200 ${
+              className={`flex-1 py-4 px-4 text-sm font-medium text-center border-b-2 transition-all duration-300 ${
                 activeTab === "register"
                   ? "border-blue-600 text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400"
                   : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-700"
-              }`}>
+              }`}
+            >
               Register
             </button>
           </div>
@@ -184,20 +304,23 @@ export default function LibraryAuth() {
               </div>
 
               <div className="space-y-4">
+                {/* Gender field removed from login form */}
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Email or Library ID
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3 top-3">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
-                        className="text-gray-400">
+                        className="text-gray-400"
+                      >
                         <path
                           fill="currentColor"
                           fillRule="evenodd"
@@ -220,23 +343,26 @@ export default function LibraryAuth() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Password
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3 top-3">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
-                        className="text-gray-400">
+                        className="text-gray-400"
+                      >
                         <g
                           fill="none"
                           stroke="currentColor"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth="2">
+                          strokeWidth="2"
+                        >
                           <rect
                             width="18"
                             height="11"
@@ -252,11 +378,18 @@ export default function LibraryAuth() {
                     <input
                       id="password"
                       name="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
-                      className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       required
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
                   </div>
                 </div>
 
@@ -270,13 +403,15 @@ export default function LibraryAuth() {
                     />
                     <label
                       htmlFor="remember"
-                      className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                      className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                    >
                       Remember me
                     </label>
                   </div>
                   <button
                     type="button"
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors">
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors"
+                  >
                     Forgot password?
                   </button>
                 </div>
@@ -286,7 +421,8 @@ export default function LibraryAuth() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
                   {isLoading ? "Signing in..." : "Sign In"}
                 </button>
               </div>
@@ -309,7 +445,8 @@ export default function LibraryAuth() {
                   type="button"
                   onClick={handleGoogleAuth}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-white dark:bg-slate-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-white dark:bg-slate-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
@@ -335,13 +472,15 @@ export default function LibraryAuth() {
                   type="button"
                   onClick={handleGithubAuth}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-gray-900 dark:bg-gray-800 text-sm font-medium text-white hover:bg-gray-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-gray-900 dark:bg-gray-800 text-sm font-medium text-white hover:bg-gray-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"
                     height="20"
                     viewBox="0 0 24 24"
-                    className="mr-3">
+                    className="mr-3"
+                  >
                     <path
                       fill="currentColor"
                       d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"
@@ -355,7 +494,7 @@ export default function LibraryAuth() {
 
           {/* Register Tab */}
           {activeTab === "register" && (
-            <form onSubmit={handleSubmit} className="p-6">
+            <form onSubmit={handleRegister} className="p-6">
               <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                   Create Account
@@ -372,7 +511,8 @@ export default function LibraryAuth() {
                   <div>
                     <label
                       htmlFor="firstName"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
                       First Name
                     </label>
                     <input
@@ -387,7 +527,8 @@ export default function LibraryAuth() {
                   <div>
                     <label
                       htmlFor="lastName"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
                       Last Name
                     </label>
                     <input
@@ -400,21 +541,42 @@ export default function LibraryAuth() {
                     />
                   </div>
                 </div>
+                <div>
+                  <label
+                    htmlFor="gender"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
+                    Gender
+                  </label>
+                  <select
+                    name="gender"
+                    id="gender"
+                    className="w-full px-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                    required
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
 
                 <div>
                   <label
                     htmlFor="registerEmail"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Email Address
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3 top-3">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
-                        className="text-gray-400">
+                        className="text-gray-400"
+                      >
                         <path
                           fill="currentColor"
                           d="M4 20q-.825 0-1.412-.587T2 18V6q0-.825.588-1.412T4 4h16q.825 0 1.413.588T22 6v12q0 .825-.587 1.413T20 20zM20 8l-7.475 4.675q-.125.075-.262.113t-.263.037t-.262-.037t-.263-.113L4 8v10h16zm-8 3l8-5H4zM4 8v.25v-1.475v.025V6v.8v-.012V8.25zv10z"
@@ -426,7 +588,7 @@ export default function LibraryAuth() {
                       id="registerEmail"
                       type="email"
                       placeholder="john.doe@example.com"
-                      className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="w-full pl-12 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       required
                     />
                   </div>
@@ -435,17 +597,19 @@ export default function LibraryAuth() {
                 <div>
                   <label
                     htmlFor="phone"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Phone Number
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3 top-3">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
-                        className="text-gray-400">
+                        className="text-gray-400"
+                      >
                         <path
                           fill="currentColor"
                           d="M9.366 10.682a10.56 10.56 0 0 0 3.952 3.952l.884-1.238a1 1 0 0 1 1.294-.296a11.4 11.4 0 0 0 4.583 1.364a1 1 0 0 1 .921.997v4.462a1 1 0 0 1-.898.995Q19.307 21 18.5 21C9.94 21 3 14.06 3 5.5q0-.807.082-1.602A1 1 0 0 1 4.077 3h4.462a1 1 0 0 1 .997.921A11.4 11.4 0 0 0 10.9 8.504a1 1 0 0 1-.296 1.294zm-2.522-.657l1.9-1.357A13.4 13.4 0 0 1 7.647 5H5.01Q5 5.25 5 5.5C5 12.956 11.044 19 18.5 19q.25 0 .5-.01v-2.637a13.4 13.4 0 0 1-3.668-1.097l-1.357 1.9a12.5 12.5 0 0 1-1.588-.75l-.058-.033a12.56 12.56 0 0 1-4.702-4.702l-.033-.058a12.4 12.4 0 0 1-.75-1.588"
@@ -457,7 +621,7 @@ export default function LibraryAuth() {
                       id="phone"
                       type="tel"
                       placeholder="(555) 123-4567"
-                      className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="w-full pl-12 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       required
                     />
                   </div>
@@ -466,17 +630,19 @@ export default function LibraryAuth() {
                 <div>
                   <label
                     htmlFor="birthDate"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Date of Birth
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3 top-3">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
-                        className="text-gray-400">
+                        className="text-gray-400"
+                      >
                         <path
                           fill="none"
                           stroke="currentColor"
@@ -491,7 +657,7 @@ export default function LibraryAuth() {
                       name="birthDate"
                       id="birthDate"
                       type="date"
-                      className="w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                      className="w-full pl-12 pr-3 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                       required
                     />
                   </div>
@@ -500,23 +666,26 @@ export default function LibraryAuth() {
                 <div>
                   <label
                     htmlFor="registerPassword"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Password
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3 top-3">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
-                        className="text-gray-400">
+                        className="text-gray-400"
+                      >
                         <g
                           fill="none"
                           stroke="currentColor"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth="2">
+                          strokeWidth="2"
+                        >
                           <rect
                             width="18"
                             height="11"
@@ -536,14 +705,15 @@ export default function LibraryAuth() {
                       placeholder="Create a strong password"
                       value={password}
                       onChange={handlePasswordChange}
-                      className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                   </div>
 
@@ -556,10 +726,12 @@ export default function LibraryAuth() {
                             className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
                             style={{
                               width: `${(passwordStrength.score / 6) * 100}%`,
-                            }}></div>
+                            }}
+                          ></div>
                         </div>
                         <span
-                          className={`text-xs font-medium ${passwordStrength.textColor}`}>
+                          className={`text-xs font-medium ${passwordStrength.textColor}`}
+                        >
                           {passwordStrength.score <= 2
                             ? "Weak"
                             : passwordStrength.score <= 4
@@ -580,7 +752,8 @@ export default function LibraryAuth() {
                             password.length >= 8
                               ? "text-green-600 dark:text-green-400"
                               : "text-gray-400 dark:text-gray-500"
-                          }`}>
+                          }`}
+                        >
                           <span className="mr-2 text-sm">
                             {password.length >= 8 ? "✓" : "○"}
                           </span>
@@ -591,7 +764,8 @@ export default function LibraryAuth() {
                             /[a-z]/.test(password)
                               ? "text-green-600 dark:text-green-400"
                               : "text-gray-400 dark:text-gray-500"
-                          }`}>
+                          }`}
+                        >
                           <span className="mr-2 text-sm">
                             {/[a-z]/.test(password) ? "✓" : "○"}
                           </span>
@@ -602,7 +776,8 @@ export default function LibraryAuth() {
                             /[A-Z]/.test(password)
                               ? "text-green-600 dark:text-green-400"
                               : "text-gray-400 dark:text-gray-500"
-                          }`}>
+                          }`}
+                        >
                           <span className="mr-2 text-sm">
                             {/[A-Z]/.test(password) ? "✓" : "○"}
                           </span>
@@ -613,7 +788,8 @@ export default function LibraryAuth() {
                             /[0-9]/.test(password)
                               ? "text-green-600 dark:text-green-400"
                               : "text-gray-400 dark:text-gray-500"
-                          }`}>
+                          }`}
+                        >
                           <span className="mr-2 text-sm">
                             {/[0-9]/.test(password) ? "✓" : "○"}
                           </span>
@@ -624,7 +800,8 @@ export default function LibraryAuth() {
                             /[^A-Za-z0-9]/.test(password)
                               ? "text-green-600 dark:text-green-400"
                               : "text-gray-400 dark:text-gray-500"
-                          }`}>
+                          }`}
+                        >
                           <span className="mr-2 text-sm">
                             {/[^A-Za-z0-9]/.test(password) ? "✓" : "○"}
                           </span>
@@ -638,23 +815,26 @@ export default function LibraryAuth() {
                 <div>
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                  >
                     Confirm Password
                   </label>
                   <div className="relative">
-                    <div className="absolute left-3 top-3">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
-                        className="text-gray-400">
+                        className="text-gray-400"
+                      >
                         <g
                           fill="none"
                           stroke="currentColor"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth="2">
+                          strokeWidth="2"
+                        >
                           <rect
                             width="18"
                             height="11"
@@ -674,7 +854,7 @@ export default function LibraryAuth() {
                       placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      className="w-full pl-12 pr-12 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       required
                     />
                     <button
@@ -682,11 +862,12 @@ export default function LibraryAuth() {
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
                       {showConfirmPassword ? (
-                        <EyeOff size={16} />
+                        <EyeOff size={20} />
                       ) : (
-                        <Eye size={16} />
+                        <Eye size={20} />
                       )}
                     </button>
                   </div>
@@ -707,11 +888,13 @@ export default function LibraryAuth() {
                   />
                   <label
                     htmlFor="terms"
-                    className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+                  >
                     I agree to the{" "}
                     <a
                       href="#"
-                      className="text-blue-600 dark:text-blue-400 hover:underline">
+                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                    >
                       library terms and conditions
                     </a>
                   </label>
@@ -722,7 +905,8 @@ export default function LibraryAuth() {
                 <button
                   type="submit"
                   disabled={isLoading || password !== confirmPassword}
-                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
                   {isLoading ? "Creating Account..." : "Create Account"}
                 </button>
               </div>
@@ -745,7 +929,8 @@ export default function LibraryAuth() {
                   type="button"
                   onClick={handleGoogleAuth}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-white dark:bg-slate-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-white dark:bg-slate-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path
                       fill="#4285F4"
@@ -771,13 +956,15 @@ export default function LibraryAuth() {
                   type="button"
                   onClick={handleGithubAuth}
                   disabled={isLoading}
-                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-gray-900 dark:bg-gray-800 text-sm font-medium text-white hover:bg-gray-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg shadow-sm bg-gray-900 dark:bg-gray-800 text-sm font-medium text-white hover:bg-gray-800 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="20"
                     height="20"
                     viewBox="0 0 24 24"
-                    className="mr-3">
+                    className="mr-3"
+                  >
                     <path
                       fill="currentColor"
                       d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"
