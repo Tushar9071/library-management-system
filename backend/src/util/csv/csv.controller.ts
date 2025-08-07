@@ -11,17 +11,29 @@ export class CsvController {
   }
 
   @Get('readCsv')
-  readCsv() {
-    return this.csvService.csvData();
+  async readCsv() {
+    const data = await this.csvService.csvData();
+    return {
+      message: 'CSV data retrieved successfully',
+      data: data,
+    };
   }
 
   @Get('/setDataIndatabase')
-  setDataIndatabase() {
-    return this.csvService.setDataIndatabase();
+  async setDataIndatabase() {
+    const result = await this.csvService.setDataIndatabase();
+    return {
+      message: 'Data inserted into database successfully',
+      data: result,
+    };
   }
 
   @Get('allbook')
-  getAllBook() {
-    return this.csvService.getAllBook();
+  async getAllBook() {
+    const books = await this.csvService.getAllBook();
+    return {
+      message: 'All books retrieved successfully',
+      data: books,
+    };
   }
 }

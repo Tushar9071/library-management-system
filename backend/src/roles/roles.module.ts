@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { RolesController } from './roles.controller';
+import { UserRoleService } from '../user-role/user-role.service';
 import { PrismaModule } from '../db/prisma/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 
@@ -12,8 +12,8 @@ import { JwtModule } from '@nestjs/jwt';
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  controllers: [UsersController],
-  providers: [UsersService],
-  exports: [UsersService],
+  controllers: [RolesController],
+  providers: [UserRoleService],
+  exports: [UserRoleService],
 })
-export class UsersModule {}
+export class RolesModule {}

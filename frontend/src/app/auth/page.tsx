@@ -135,9 +135,9 @@ export default function LibraryAuth() {
       });
 
       if (response.ok) {
-        toast.success("Login successful!", { id: loadingToast });
-        const data = await response.json();
-        console.log(data);
+        let data = await response.json();
+        toast.success(data.message, { id: loadingToast });
+        data = data.data;
 
         localStorage.setItem(
           "userData",
@@ -145,6 +145,7 @@ export default function LibraryAuth() {
             id: data.id,
             email: data.email,
             role: data.role,
+            name: data.name,
           })
         );
 

@@ -1,19 +1,24 @@
-// This is a placeholder for user role. In a real application, this would come from your authentication system.
-let currentUserRole = "student"; // Can be "librarian", "student", or "public"
-export default async function DashboardPage() {
+"use client";
+let currentUserRole = "admin";
+import { userStore } from "@/store/useUserRoleStore";
+export default function DashboardPage() {
+  const { id, email, role, name } = userStore();
+  console.log(`User ID: ${id}, Email: ${email}, Role: ${role}, Name: ${name}`);
+
   let welcomeMessage = "";
   let description = "";
+  currentUserRole = role.toLowerCase();
 
   switch (currentUserRole) {
-    case "librarian":
-      welcomeMessage = "Welcome, Librarian!";
-      description = "Manage books, users, and library operations.";
+    case "admin":
+      welcomeMessage = "Welcome, Admin!";
+      description = "Manage books, users, and Admin operations.";
       break;
     case "student":
       welcomeMessage = "Welcome, Student!";
       description = "View your borrowed books and explore the catalog.";
       break;
-    case "public":
+    case "public user":
       welcomeMessage = "Welcome to the Library!";
       description = "Browse our extensive collection of books.";
       break;
@@ -30,7 +35,7 @@ export default async function DashboardPage() {
       <p className="text-gray-700 dark:text-gray-300 text-lg">{description}</p>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {currentUserRole === "librarian" && (
+        {currentUserRole === "admin" && (
           <>
             <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-semibold text-blue-700 dark:text-blue-300 mb-2">

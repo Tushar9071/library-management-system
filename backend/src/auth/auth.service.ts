@@ -20,9 +20,9 @@ export class AuthService {
   }
 
   async login(user: any) {
+    console.log(user);
     const payload = { sub: user.id, email: user.email };
     const token = this.jwtService.sign(payload);
-    
 
     // Save in session table
     await this.prisma.session.upsert({
@@ -31,7 +31,12 @@ export class AuthService {
       create: { userId: user.id, token },
     });
 
-    return { access_token: token , email:user.email , role:user.userInfoId.role.role };
+    return {
+      access_token: token,
+      name: user.userInfoId.firstname,
+      email: user.email,
+      role: user.userInfoId.role.role,
+    };
   }
 
   async logout(token: string) {
@@ -67,10 +72,10 @@ export class AuthService {
       include: {
         userInfoId: {
           include: {
-            role: true
-          }
-        }
-      }
+            role: true,
+          },
+        },
+      },
     });
 
     if (user) {
@@ -80,13 +85,13 @@ export class AuthService {
         update: { token },
         create: { userId: user.id, token },
       });
-      return { 
+      return {
         token: token,
         user: {
           id: user.id,
           email: user.email,
-          role: user.userInfoId?.role?.role || 'public user'
-        }
+          role: user.userInfoId?.role?.role || 'public user',
+        },
       };
     }
 
@@ -135,19 +140,19 @@ export class AuthService {
       include: {
         userInfoId: {
           include: {
-            role: true
-          }
-        }
-      }
+            role: true,
+          },
+        },
+      },
     });
-    
-    return { 
+
+    return {
       token: token,
       user: {
         id: newUser.id,
         email: newUser.email,
-        role: newUser.userInfoId?.role?.role || 'public user'
-      }
+        role: newUser.userInfoId?.role?.role || 'public user',
+      },
     };
   }
 
@@ -157,10 +162,10 @@ export class AuthService {
       include: {
         userInfoId: {
           include: {
-            role: true
-          }
-        }
-      }
+            role: true,
+          },
+        },
+      },
     });
 
     if (user) {
@@ -170,13 +175,13 @@ export class AuthService {
         update: { token },
         create: { userId: user.id, token },
       });
-      return { 
+      return {
         token: token,
         user: {
           id: user.id,
           email: user.email,
-          role: user.userInfoId?.role?.role || 'public user'
-        }
+          role: user.userInfoId?.role?.role || 'public user',
+        },
       };
     }
 
@@ -225,19 +230,19 @@ export class AuthService {
       include: {
         userInfoId: {
           include: {
-            role: true
-          }
-        }
-      }
+            role: true,
+          },
+        },
+      },
     });
-    
-    return { 
+
+    return {
       token: token,
       user: {
         id: newUser.id,
         email: newUser.email,
-        role: newUser.userInfoId?.role?.role || 'public user'
-      }
+        role: newUser.userInfoId?.role?.role || 'public user',
+      },
     };
   }
 }

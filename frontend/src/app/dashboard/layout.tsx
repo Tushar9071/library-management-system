@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -21,15 +22,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/theme-toggle"; // Import ThemeToggle
 import { logOut } from "@/hooks/auth.hooks";
+import { userStore } from "@/store/useUserRoleStore";
 
 // This is a placeholder for user role. In a real application, this would come from your authentication system.
-const currentUserRole = "librarian"; // Can be "librarian", "student", or "public"
+let currentUserRole = ""; // Can be "admin", "student", or "public user"
 
 const navItems = {
-  librarian: [
+  admin: [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Manage Books", href: "/dashboard/books", icon: BookOpen },
     { name: "Manage Users", href: "/dashboard/users", icon: Users },
+    { name: "Manage Roles", href: "/dashboard/roles", icon: Shield },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ],
   student: [
@@ -37,7 +40,7 @@ const navItems = {
     { name: "My Books", href: "/dashboard/my-books", icon: BookOpen },
     { name: "Profile", href: "/dashboard/profile", icon: User },
   ],
-  public: [
+  "public user": [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Browse Catalog", href: "/dashboard/catalog", icon: BookOpen },
   ],
@@ -50,6 +53,8 @@ export default function DashboardLayout({
 }) {
   const userNavigation =
     navItems[currentUserRole as keyof typeof navItems] || [];
+  const { id, email, role, name } = userStore();
+  currentUserRole = role.toLowerCase();
 
   // In a real app, you'd check session here and redirect if unauthenticated
   // if (!userNavigation.length && currentUserRole !== "public") {
@@ -103,10 +108,10 @@ export default function DashboardLayout({
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 cursor-pointer rounded-full p-1 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
                   <div className="w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-700 flex items-center justify-center text-blue-800 dark:text-blue-200 font-medium">
-                    JD
+                    {name ? name.charAt(0).toUpperCase() : "U"}
                   </div>
                   <span className="text-gray-700 dark:text-gray-300 text-sm hidden sm:inline">
-                    John Doe ({currentUserRole})
+                    {name}({currentUserRole})
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </button>

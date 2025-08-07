@@ -40,7 +40,7 @@ model userInfo {
   firstname  String
   lastname   String
   Username   String?   @unique
-  phone      String?    @unique
+  phone      String?   @unique
   gender     Gender
   dob        DateTime?
   aadharNo   String?   @unique

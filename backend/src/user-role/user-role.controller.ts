@@ -23,19 +23,31 @@ export class UserRoleController {
     if (!role || role.trim() === '') {
       throw new Error('Role name is required');
     }
-    return this.userRoleService.createRole(role.trim());
+    const newRole = await this.userRoleService.createRole(role.trim());
+    return {
+      message: 'Role created successfully',
+      data: newRole,
+    };
   }
 
   // Get all user roles
   @Get()
   async getAllRoles() {
-    return this.userRoleService.getAllRoles();
+    const roles = await this.userRoleService.getAllRoles();
+    return {
+      message: 'Roles retrieved successfully',
+      data: roles,
+    };
   }
 
   // Get a specific role by ID
   @Get(':id')
   async getRoleById(@Param('id', ParseIntPipe) id: number) {
-    return this.userRoleService.getRoleById(id);
+    const role = await this.userRoleService.getRoleById(id);
+    return {
+      message: 'Role retrieved successfully',
+      data: role,
+    };
   }
 
   // Update a user role
@@ -47,18 +59,30 @@ export class UserRoleController {
     if (!role || role.trim() === '') {
       throw new Error('Role name is required');
     }
-    return this.userRoleService.updateRole(id, role.trim());
+    const updatedRole = await this.userRoleService.updateRole(id, role.trim());
+    return {
+      message: 'Role updated successfully',
+      data: updatedRole,
+    };
   }
 
   // Soft delete a user role
   @Delete(':id')
   async deleteRole(@Param('id', ParseIntPipe) id: number) {
-    return this.userRoleService.deleteRole(id);
+    const result = await this.userRoleService.deleteRole(id);
+    return {
+      message: result.message || 'Role deleted successfully',
+      data: null,
+    };
   }
 
   // Hard delete a user role (permanently remove)
   @Delete(':id/permanent')
   async hardDeleteRole(@Param('id', ParseIntPipe) id: number) {
-    return this.userRoleService.hardDeleteRole(id);
+    const result = await this.userRoleService.hardDeleteRole(id);
+    return {
+      message: result?.message || 'Role permanently deleted',
+      data: null,
+    };
   }
 }

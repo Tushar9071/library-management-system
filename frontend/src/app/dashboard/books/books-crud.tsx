@@ -42,7 +42,15 @@ import {
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash2, BookOpen, Calendar, User, Hash } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  BookOpen,
+  Calendar,
+  User,
+  Hash,
+} from "lucide-react";
 import { toast } from "react-hot-toast";
 
 interface Book {
@@ -89,7 +97,7 @@ export default function BooksPage() {
     "Reference",
     "Poetry",
     "Drama",
-    "Other"
+    "Other",
   ];
 
   // Fetch books
@@ -130,8 +138,7 @@ export default function BooksPage() {
 
       if (!response.ok) throw new Error("Failed to create book");
 
-      const result = await response.json();
-      toast.success(result.message || "Book created successfully");
+      toast.success("Book created successfully");
       setIsCreateOpen(false);
       resetForm();
       fetchBooks();
@@ -147,19 +154,21 @@ export default function BooksPage() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8000/api/books/${editingBook.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        `http://localhost:8000/api/books/${editingBook.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to update book");
 
-      const result = await response.json();
-      toast.success(result.message || "Book updated successfully");
+      toast.success("Book updated successfully");
       setIsEditOpen(false);
       setEditingBook(null);
       resetForm();
@@ -174,17 +183,19 @@ export default function BooksPage() {
   const deleteBook = async (bookId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8000/api/books/${bookId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:8000/api/books/${bookId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to delete book");
 
-      const result = await response.json();
-      toast.success(result.message || "Book deleted successfully");
+      toast.success("Book deleted successfully");
       fetchBooks();
     } catch (error) {
       toast.error("Failed to delete book");
@@ -229,7 +240,9 @@ export default function BooksPage() {
       case "checked_out":
         return <Badge className="bg-blue-100 text-blue-800">Checked Out</Badge>;
       case "reserved":
-        return <Badge className="bg-yellow-100 text-yellow-800">Reserved</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800">Reserved</Badge>
+        );
       case "maintenance":
         return <Badge className="bg-red-100 text-red-800">Maintenance</Badge>;
       default:
@@ -309,7 +322,10 @@ export default function BooksPage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, description: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                   placeholder="Enter book description"
                 />
@@ -342,7 +358,10 @@ export default function BooksPage() {
                     type="number"
                     value={formData.publishedYear}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, publishedYear: parseInt(e.target.value) }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        publishedYear: parseInt(e.target.value),
+                      }))
                     }
                     placeholder="Year"
                   />
@@ -357,7 +376,10 @@ export default function BooksPage() {
                     min="1"
                     value={formData.totalCopies}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, totalCopies: parseInt(e.target.value) }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        totalCopies: parseInt(e.target.value),
+                      }))
                     }
                   />
                 </div>
@@ -370,7 +392,10 @@ export default function BooksPage() {
                     max={formData.totalCopies}
                     value={formData.availableCopies}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, availableCopies: parseInt(e.target.value) }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        availableCopies: parseInt(e.target.value),
+                      }))
                     }
                   />
                 </div>
@@ -476,8 +501,8 @@ export default function BooksPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Book</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete this book? This action
-                              cannot be undone.
+                              Are you sure you want to delete this book? This
+                              action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -549,7 +574,10 @@ export default function BooksPage() {
                 id="edit-description"
                 value={formData.description}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
                 }
                 placeholder="Enter book description"
               />
@@ -582,7 +610,10 @@ export default function BooksPage() {
                   type="number"
                   value={formData.publishedYear}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, publishedYear: parseInt(e.target.value) }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      publishedYear: parseInt(e.target.value),
+                    }))
                   }
                   placeholder="Year"
                 />
@@ -597,7 +628,10 @@ export default function BooksPage() {
                   min="1"
                   value={formData.totalCopies}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, totalCopies: parseInt(e.target.value) }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      totalCopies: parseInt(e.target.value),
+                    }))
                   }
                 />
               </div>
@@ -610,7 +644,10 @@ export default function BooksPage() {
                   max={formData.totalCopies}
                   value={formData.availableCopies}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, availableCopies: parseInt(e.target.value) }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      availableCopies: parseInt(e.target.value),
+                    }))
                   }
                 />
               </div>

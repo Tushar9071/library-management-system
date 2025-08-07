@@ -137,8 +137,7 @@ export default function UsersPage() {
 
       if (!response.ok) throw new Error("Failed to create user");
 
-      const result = await response.json();
-      toast.success(result.message || "User created successfully");
+      toast.success("User created successfully");
       setIsCreateOpen(false);
       resetForm();
       fetchUsers();
@@ -158,20 +157,22 @@ export default function UsersPage() {
       if (!updateData.password) {
         delete updateData.password; // Don't update password if empty
       }
-      
-      const response = await fetch(`http://localhost:8000/api/users/${editingUser.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updateData),
-      });
+
+      const response = await fetch(
+        `http://localhost:8000/api/users/${editingUser.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateData),
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to update user");
 
-      const result = await response.json();
-      toast.success(result.message || "User updated successfully");
+      toast.success("User updated successfully");
       setIsEditOpen(false);
       setEditingUser(null);
       resetForm();
@@ -186,17 +187,19 @@ export default function UsersPage() {
   const deleteUser = async (userId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:8000/api/users/${userId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `http://localhost:8000/api/users/${userId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) throw new Error("Failed to delete user");
 
-      const result = await response.json();
-      toast.success(result.message || "User deleted successfully");
+      toast.success("User deleted successfully");
       fetchUsers();
     } catch (error) {
       toast.error("Failed to delete user");
@@ -235,7 +238,9 @@ export default function UsersPage() {
       case "inactive":
         return <Badge className="bg-red-100 text-red-800">Inactive</Badge>;
       case "suspended":
-        return <Badge className="bg-yellow-100 text-yellow-800">Suspended</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800">Suspended</Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -316,7 +321,10 @@ export default function UsersPage() {
                   type="password"
                   value={formData.password}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, password: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
                   }
                   placeholder="Enter password"
                 />
@@ -437,8 +445,8 @@ export default function UsersPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete User</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete this user? This action
-                              cannot be undone.
+                              Are you sure you want to delete this user? This
+                              action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -506,7 +514,9 @@ export default function UsersPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-password">New Password (leave blank to keep current)</Label>
+              <Label htmlFor="edit-password">
+                New Password (leave blank to keep current)
+              </Label>
               <Input
                 id="edit-password"
                 type="password"
