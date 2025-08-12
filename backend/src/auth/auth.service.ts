@@ -20,7 +20,6 @@ export class AuthService {
   }
 
   async login(user: any) {
-    console.log(user);
     const payload = { sub: user.id, email: user.email };
     const token = this.jwtService.sign(payload);
 
@@ -33,9 +32,9 @@ export class AuthService {
 
     return {
       access_token: token,
-      name: user.userInfoId.firstname,
+      name: user.userInfoId?.firstname || '',
       email: user.email,
-      role: user.userInfoId.role.role,
+      role: user.userInfoId?.role?.role || 'public user',
     };
   }
 
@@ -86,12 +85,10 @@ export class AuthService {
         create: { userId: user.id, token },
       });
       return {
-        token: token,
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.userInfoId?.role?.role || 'public user',
-        },
+        access_token: token,
+        name: user.userInfoId?.firstname || '',
+        email: user.email,
+        role: user.userInfoId?.role?.role || 'public user',
       };
     }
 
@@ -147,12 +144,10 @@ export class AuthService {
     });
 
     return {
-      token: token,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        role: newUser.userInfoId?.role?.role || 'public user',
-      },
+      access_token: token,
+      name: newUser.userInfoId?.firstname || '',
+      email: newUser.email,
+      role: newUser.userInfoId?.role?.role || 'public user',
     };
   }
 
@@ -176,12 +171,10 @@ export class AuthService {
         create: { userId: user.id, token },
       });
       return {
-        token: token,
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.userInfoId?.role?.role || 'public user',
-        },
+        access_token: token,
+        name: user.userInfoId?.firstname || '',
+        email: user.email,
+        role: user.userInfoId?.role?.role || 'public user',
       };
     }
 
@@ -237,12 +230,10 @@ export class AuthService {
     });
 
     return {
-      token: token,
-      user: {
-        id: newUser.id,
-        email: newUser.email,
-        role: newUser.userInfoId?.role?.role || 'public user',
-      },
+      access_token: token,
+      name: newUser.userInfoId?.firstname || '',
+      email: newUser.email,
+      role: newUser.userInfoId?.role?.role || 'public user',
     };
   }
 }

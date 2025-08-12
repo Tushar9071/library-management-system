@@ -22,6 +22,7 @@ export class CsvService {
         rating_count: item.ratings_count || 0,
         penalty: 50,
         language: item.language || 'english',
+        thumbnail: item.thumbnail || '',
       };
     });
     return returndata;
@@ -61,6 +62,7 @@ export class CsvService {
             rating_count: parseInt(book.rating_count) || 0,
             penalty: book.penalty,
             language: book.language,
+            thumbnail: book.thumbnail || '',
           },
         });
       }

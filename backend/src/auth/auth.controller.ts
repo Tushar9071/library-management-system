@@ -57,15 +57,14 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.googleLogin(body.email, body.token);
-    console.log(result);
+    res.cookie('token', result.access_token, { httpOnly: true });
 
-    res.cookie('token', result.token, { httpOnly: true });
     return {
       message: 'Google login successful',
       data: {
-        id: result.user.id,
-        email: result.user.email,
-        role: result.user.role,
+        email: result.email,
+        role: result.role,
+        name: result.name,
       },
     };
   }
@@ -76,13 +75,13 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.githubLogin(body.email, body.token);
-    res.cookie('token', result.token, { httpOnly: true });
+    res.cookie('token', result.access_token, { httpOnly: true });
     return {
       message: 'GitHub login successful',
       data: {
-        id: result.user.id,
-        email: result.user.email,
-        role: result.user.role,
+        email: result.email,
+        role: result.role,
+        name: result.name,
       },
     };
   }

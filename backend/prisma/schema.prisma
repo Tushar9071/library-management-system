@@ -91,6 +91,7 @@ model book_master {
   description  String?
   total_books  Int      @default(1)
   pages        Int?
+  thumbnail    String?
   avg_rating   Float?
   rating_count Float?
   penalty      Float?

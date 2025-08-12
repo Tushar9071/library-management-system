@@ -73,9 +73,49 @@ export class UsersService {
   }
 
   // CRUD methods for admin panel
-  async findAll() {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    role?: string,
+  ) {
+    const skip = (page - 1) * limit;
+
+    // Build where clause for filtering
+    const whereClause: any = { visibility: true };
+
+    if (search) {
+      whereClause.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        {
+          userInfoId: {
+            OR: [
+              { firstname: { contains: search, mode: 'insensitive' } },
+              { lastname: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
+      ];
+    }
+
+    if (role && role !== 'all') {
+      whereClause.userInfoId = {
+        ...whereClause.userInfoId,
+        role: {
+          role: { equals: role, mode: 'insensitive' },
+        },
+      };
+    }
+
+    // Get total count for pagination
+    const totalCount = await this.prisma.users.count({
+      where: whereClause,
+    });
+
+    // Get paginated results
     const users = await this.prisma.users.findMany({
-      where: { visibility: true },
+      where: whereClause,
       include: {
         userInfoId: {
           include: {
@@ -84,9 +124,11 @@ export class UsersService {
         },
       },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
     });
 
-    return users.map((user) => ({
+    const formattedUsers = users.map((user) => ({
       id: user.id.toString(),
       email: user.email,
       name: user.userInfoId
@@ -100,6 +142,33 @@ export class UsersService {
       status: user.visibility ? 'active' : 'inactive',
       createdAt: user.createdAt.toISOString(),
       lastLogin: user.updatedAt.toISOString(),
+    }));
+
+    return {
+      users: formattedUsers,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page < Math.ceil(totalCount / limit),
+        hasPrev: page > 1,
+      },
+    };
+  }
+
+  async getUserRoles() {
+    const roles = await this.prisma.userRole.findMany({
+      select: {
+        id: true,
+        role: true,
+      },
+      orderBy: { role: 'asc' },
+    });
+
+    return roles.map((role) => ({
+      id: role.id.toString(),
+      name: role.role,
     }));
   }
 

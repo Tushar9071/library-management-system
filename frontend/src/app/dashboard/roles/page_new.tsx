@@ -96,18 +96,6 @@ export default function RolesPage() {
     "SYSTEM_CONFIG",
   ];
 
-  // Helper to normalize various API list shapes into Role[]
-  const toRoleArray = (data: unknown): Role[] => {
-    const anyData = data as any;
-    const list =
-      Array.isArray(anyData) ||
-      anyData?.items ||
-      anyData?.data ||
-      anyData?.roles ||
-      [];
-    return Array.isArray(list) ? (list as Role[]) : [];
-  };
-
   useEffect(() => {
     fetchRoles();
   }, []);
@@ -118,15 +106,13 @@ export default function RolesPage() {
       const response = await fetch("/api/roles");
       if (response.ok) {
         const data = await response.json();
-        setRoles(toRoleArray(data));
+        setRoles(data);
       } else {
         toast.error("Failed to fetch roles");
-        setRoles([]);
       }
     } catch (error) {
       console.error("Error fetching roles:", error);
       toast.error("Error fetching roles");
-      setRoles([]);
     } finally {
       setLoading(false);
     }
@@ -146,9 +132,8 @@ export default function RolesPage() {
       });
 
       if (response.ok) {
-        const payload = await response.json();
-        const newRole = (payload as any)?.role ?? payload;
-        setRoles((prev) => [...prev, newRole as Role]);
+        const newRole = await response.json();
+        setRoles([...roles, newRole]);
         setFormData({ name: "", description: "", permissions: [] });
         setIsCreateDialogOpen(false);
         toast.success("Role created successfully");
@@ -175,11 +160,8 @@ export default function RolesPage() {
       });
 
       if (response.ok) {
-        const payload = await response.json();
-        const updatedRole = (payload as any)?.role ?? payload;
-        setRoles((prev) =>
-          prev.map((r) => (r.id === editingRole.id ? (updatedRole as Role) : r))
-        );
+        const updatedRole = await response.json();
+        setRoles(roles.map((r) => (r.id === editingRole.id ? updatedRole : r)));
         setIsEditDialogOpen(false);
         setEditingRole(null);
         toast.success("Role updated successfully");
@@ -232,6 +214,11 @@ export default function RolesPage() {
         ? prev.permissions.filter((p) => p !== permission)
         : [...prev.permissions, permission],
     }));
+  };
+
+  const resetForm = () => {
+    setFormData({ name: "", description: "", permissions: [] });
+    setEditingRole(null);
   };
 
   // Filter roles based on search
@@ -485,9 +472,8 @@ export default function RolesPage() {
                                     Delete Role
                                   </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to delete the role
-                                    &quot;{role.name}&quot;? This action cannot
-                                    be undone.
+                                    Are you sure you want to delete the role "
+                                    {role.name}"? This action cannot be undone.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -551,8 +537,7 @@ export default function RolesPage() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Delete Role</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to delete &quot;
-                                  {role.name}&quot;?
+                                  Are you sure you want to delete "{role.name}"?
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

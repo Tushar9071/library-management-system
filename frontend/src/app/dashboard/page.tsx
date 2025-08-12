@@ -1,30 +1,41 @@
 "use client";
-let currentUserRole = "admin";
+import { useEffect, useState } from "react";
 import { userStore } from "@/store/useUserRoleStore";
+
 export default function DashboardPage() {
   const { id, email, role, name } = userStore();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   console.log(`User ID: ${id}, Email: ${email}, Role: ${role}, Name: ${name}`);
 
-  let welcomeMessage = "";
-  let description = "";
-  currentUserRole = role.toLowerCase();
+  // Use client-side role or fallback to empty string during SSR
+  const currentUserRole = isClient ? role.toLowerCase() : "";
 
-  switch (currentUserRole) {
-    case "admin":
-      welcomeMessage = "Welcome, Admin!";
-      description = "Manage books, users, and Admin operations.";
-      break;
-    case "student":
-      welcomeMessage = "Welcome, Student!";
-      description = "View your borrowed books and explore the catalog.";
-      break;
-    case "public user":
-      welcomeMessage = "Welcome to the Library!";
-      description = "Browse our extensive collection of books.";
-      break;
-    default:
-      welcomeMessage = "Welcome!";
-      description = "Explore the library portal.";
+  let welcomeMessage = "Welcome!";
+  let description = "Explore the library portal.";
+
+  if (isClient) {
+    switch (currentUserRole) {
+      case "admin":
+        welcomeMessage = "Welcome, Admin!";
+        description = "Manage books, users, and Admin operations.";
+        break;
+      case "student":
+        welcomeMessage = "Welcome, Student!";
+        description = "View your borrowed books and explore the catalog.";
+        break;
+      case "public user":
+        welcomeMessage = "Welcome to the Library!";
+        description = "Browse our extensive collection of books.";
+        break;
+      default:
+        welcomeMessage = "Welcome!";
+        description = "Explore the library portal.";
+    }
   }
 
   return (
@@ -35,7 +46,7 @@ export default function DashboardPage() {
       <p className="text-gray-700 dark:text-gray-300 text-lg">{description}</p>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {currentUserRole === "admin" && (
+        {isClient && currentUserRole === "admin" && (
           <>
             <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-semibold text-blue-700 dark:text-blue-300 mb-2">
@@ -74,7 +85,7 @@ export default function DashboardPage() {
           </>
         )}
 
-        {currentUserRole === "student" && (
+        {isClient && currentUserRole === "student" && (
           <>
             <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-semibold text-blue-700 dark:text-blue-300 mb-2">
@@ -97,7 +108,7 @@ export default function DashboardPage() {
           </>
         )}
 
-        {currentUserRole === "public" && (
+        {isClient && currentUserRole === "public" && (
           <>
             <div className="bg-blue-50 dark:bg-blue-900/20 p-6 rounded-lg shadow-md">
               <h3 className="text-xl font-semibold text-blue-700 dark:text-blue-300 mb-2">

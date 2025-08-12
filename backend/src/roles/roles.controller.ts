@@ -11,7 +11,7 @@ import {
 import { UserRoleService } from '../user-role/user-role.service';
 import { JwtMiddleware } from '../auth/jwt.middleware';
 
-@Controller('api/roles')
+@Controller('/roles')
 @UseGuards(JwtMiddleware)
 export class RolesController {
   constructor(private readonly userRoleService: UserRoleService) {}

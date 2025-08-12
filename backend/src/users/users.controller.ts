@@ -7,21 +7,48 @@ import {
   Body,
   Param,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtMiddleware } from '../auth/jwt.middleware';
 
-@Controller('api/users')
+@Controller('/users')
 @UseGuards(JwtMiddleware)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  async getAllUsers() {
-    const users = await this.usersService.findAll();
+  async getAllUsers(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+  ) {
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+
+    // Ensure reasonable limits
+    const validLimit = Math.min(Math.max(limitNum, 1), 100);
+
+    const result = await this.usersService.findAll(
+      pageNum,
+      validLimit,
+      search,
+      role,
+    );
     return {
       message: 'Users retrieved successfully',
-      data: users,
+      data: result.users,
+      pagination: result.pagination,
+    };
+  }
+
+  @Get('roles')
+  async getUserRoles() {
+    const roles = await this.usersService.getUserRoles();
+    return {
+      message: 'User roles retrieved successfully',
+      data: roles,
     };
   }
 

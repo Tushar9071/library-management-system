@@ -5,15 +5,46 @@ import { PrismaService } from '../db/prisma/prisma.service';
 export class BooksService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    category?: string,
+  ) {
+    const skip = (page - 1) * limit;
+
+    // Build where clause for filtering
+    const whereClause: any = {};
+
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { author: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (category && category !== 'all') {
+      whereClause.category = { equals: category, mode: 'insensitive' };
+    }
+
+    // Get total count for pagination
+    const totalCount = await this.prisma.book_master.count({
+      where: whereClause,
+    });
+
+    // Get paginated results
     const bookMasters = await this.prisma.book_master.findMany({
+      where: whereClause,
       include: {
         books: true,
       },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
     });
 
-    return bookMasters.map((bookMaster) => {
+    const books = bookMasters.map((bookMaster) => {
       const availableCopies = bookMaster.books.filter(
         (book) => book.status === 'available',
       ).length;
@@ -29,9 +60,41 @@ export class BooksService {
         publishedYear: bookMaster.publish_year || new Date().getFullYear(),
         totalCopies: bookMaster.total_books,
         availableCopies: availableCopies,
+        thumbnail: bookMaster.thumbnail || null,
         createdAt: bookMaster.createdAt.toISOString(),
       };
     });
+
+    return {
+      books,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page < Math.ceil(totalCount / limit),
+        hasPrev: page > 1,
+      },
+    };
+  }
+
+  async getCategories() {
+    const categories = await this.prisma.book_master.findMany({
+      select: {
+        category: true,
+      },
+      distinct: ['category'],
+      where: {
+        category: {
+          not: null,
+        },
+      },
+    });
+
+    return categories
+      .map((item) => item.category)
+      .filter((category) => category && category.trim() !== '')
+      .sort();
   }
 
   async findById(id: number) {
@@ -61,6 +124,7 @@ export class BooksService {
       publishedYear: bookMaster.publish_year || new Date().getFullYear(),
       totalCopies: bookMaster.total_books,
       availableCopies: availableCopies,
+      thumbnail: bookMaster.thumbnail || null,
       createdAt: bookMaster.createdAt.toISOString(),
     };
   }
@@ -75,6 +139,7 @@ export class BooksService {
       publishedYear,
       totalCopies,
       status,
+      thumbnail,
     } = createBookDto;
 
     // Create book master
@@ -87,6 +152,7 @@ export class BooksService {
         category,
         publish_year: publishedYear,
         total_books: totalCopies,
+        thumbnail: thumbnail || null,
         books: {
           create: Array.from({ length: totalCopies }, (_, i) => ({
             barcode: `${title.replace(/\s+/g, '')}_${i + 1}`,
@@ -115,6 +181,7 @@ export class BooksService {
       publishedYear: bookMaster.publish_year || new Date().getFullYear(),
       totalCopies: bookMaster.total_books,
       availableCopies: availableCopies,
+      thumbnail: bookMaster.thumbnail || null,
       createdAt: bookMaster.createdAt.toISOString(),
     };
   }
@@ -130,6 +197,7 @@ export class BooksService {
       totalCopies,
       availableCopies,
       status,
+      thumbnail,
     } = updateBookDto;
 
     // Update book master
@@ -142,6 +210,7 @@ export class BooksService {
         category,
         publish_year: publishedYear,
         total_books: totalCopies,
+        thumbnail: thumbnail !== undefined ? thumbnail : undefined,
       },
       include: {
         books: true,
@@ -203,6 +272,7 @@ export class BooksService {
       publishedYear: updatedBookMaster.publish_year || new Date().getFullYear(),
       totalCopies: updatedBookMaster.total_books,
       availableCopies: updatedAvailableCopies,
+      thumbnail: updatedBookMaster.thumbnail || null,
       createdAt: updatedBookMaster.createdAt.toISOString(),
     };
   }

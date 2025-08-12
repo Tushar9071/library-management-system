@@ -20,6 +20,19 @@ import {
   User,
 } from "lucide-react";
 
+// Define types for navigation items
+type NavigationSubItem = {
+  title: string;
+  url: string;
+};
+
+type NavigationItem = {
+  title: string;
+  url: string;
+  icon: React.ComponentType<any>;
+  items?: NavigationSubItem[];
+};
+
 import {
   Sidebar,
   SidebarContent,
@@ -63,8 +76,8 @@ const mockUser = {
 export function AppSidebar() {
   const [user] = useState(mockUser);
 
-  const getNavigationItems = () => {
-    const commonItems = [
+  const getNavigationItems = (): NavigationItem[] => {
+    const commonItems: NavigationItem[] = [
       {
         title: "Dashboard",
         url: "/dashboard",
@@ -88,7 +101,7 @@ export function AppSidebar() {
             items: [
               { title: "All Users", url: "/dashboard/users" },
               { title: "Add User", url: "/dashboard/users/add" },
-              { title: "User Roles", url: "/dashboard/users/roles" },
+              { title: "User Roles", url: "/dashboard/roles" },
             ],
           },
           {
@@ -243,6 +256,13 @@ export function AppSidebar() {
 
   const navigationItems = getNavigationItems();
 
+  // Type guard to check if an item has subitems
+  const hasSubItems = (
+    item: NavigationItem
+  ): item is NavigationItem & { items: NavigationSubItem[] } => {
+    return item.items !== undefined && item.items.length > 0;
+  };
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -268,7 +288,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  {item.items ? (
+                  {hasSubItems(item) ? (
                     <Collapsible className="group/collapsible">
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton>
@@ -278,7 +298,7 @@ export function AppSidebar() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {item.items.map((subItem) => (
+                          {item.items.map((subItem: NavigationSubItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild>
                                 <Link href={subItem.url}>
@@ -354,7 +374,8 @@ export function AppSidebar() {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage
                       src={user.avatar || "/placeholder.svg"}
@@ -379,7 +400,8 @@ export function AppSidebar() {
                 className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
                 side="bottom"
                 align="end"
-                sideOffset={4}>
+                sideOffset={4}
+              >
                 <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
                   <span>Account</span>

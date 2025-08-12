@@ -1,18 +1,19 @@
 "use client";
-
-import type React from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
+  Home,
   BookOpen,
   Users,
-  User,
-  Home,
   Settings,
+  User,
   LogOut,
-  ChevronDown,
+  Menu,
+  X,
   Shield,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,101 +21,147 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/theme-toggle"; // Import ThemeToggle
+import { Button } from "@/components/ui/button";
 import { logOut } from "@/hooks/auth.hooks";
-import { userStore } from "@/store/useUserRoleStore";
-
-// This is a placeholder for user role. In a real application, this would come from your authentication system.
-let currentUserRole = ""; // Can be "admin", "student", or "public user"
-
-const navItems = {
-  admin: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Manage Books", href: "/dashboard/books", icon: BookOpen },
-    { name: "Manage Users", href: "/dashboard/users", icon: Users },
-    { name: "Manage Roles", href: "/dashboard/roles", icon: Shield },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
-  ],
-  student: [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "My Books", href: "/dashboard/my-books", icon: BookOpen },
-    { name: "Profile", href: "/dashboard/profile", icon: User },
-  ],
-  "public user": [
-    { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Browse Catalog", href: "/dashboard/catalog", icon: BookOpen },
-  ],
-};
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const userNavigation =
-    navItems[currentUserRole as keyof typeof navItems] || [];
-  const { id, email, role, name } = userStore();
-  currentUserRole = role.toLowerCase();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const pathname = usePathname();
 
-  // In a real app, you'd check session here and redirect if unauthenticated
-  // if (!userNavigation.length && currentUserRole !== "public") {
-  //   redirect("/auth");
-  // }
+  // Ensure this only runs on the client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const navItems = [
+    { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/dashboard/books", icon: BookOpen, label: "Manage Books" },
+    { href: "/dashboard/users", icon: Users, label: "Manage Users" },
+    { href: "/dashboard/roles", icon: Shield, label: "Manage Roles" },
+    { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+  ];
+
+  // Don't render navigation links until client-side hydration is complete
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex">
+        <div className="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 shadow-lg"></div>
+        <main className="flex-1 flex flex-col">
+          <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+            </div>
+          </header>
+          <div className="flex-1 p-6">{children}</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 flex">
+      {/* Mobile sidebar overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 shadow-lg flex flex-col">
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
+      <aside
+        className={`
+        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 shadow-lg transform transition-transform duration-300 ease-in-out
+        ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }
+      `}
+      >
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 dark:bg-blue-500 p-2 rounded-full shadow-md">
-              <BookOpen className="text-white w-6 h-6" />
+            <div className="bg-blue-600 dark:bg-blue-500 p-2 rounded-lg">
+              <BookOpen className="w-6 h-6 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Library Portal
-            </h2>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+                Library
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Management
+              </p>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </Button>
         </div>
+
         <nav className="flex-1 p-4 space-y-2">
-          {userNavigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                // Add active state logic here based on current path
-              )}
-            >
-              <item.icon className="w-5 h-5" />
-              <span>{item.name}</span>
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  flex items-center gap-3 px-4 py-2 rounded-lg transition-colors duration-200
+                  ${isActive}
+                    ? 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
+                  }
+                `}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
-        <div className="p-4 border-t border-gray-200 dark:border-slate-700">
-          {/* You can add a dedicated logout button here if preferred, or rely on the dropdown */}
-        </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Main content */}
       <main className="flex-1 flex flex-col">
-        {/* Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between shadow-sm">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Dashboard
-          </h1>
           <div className="flex items-center gap-4">
-            <ThemeToggle /> {/* Add ThemeToggle here */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="lg:hidden"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <ThemeToggle />
+          </div>
+
+          <div className="flex items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 cursor-pointer rounded-full p-1 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800">
-                  <div className="w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-700 flex items-center justify-center text-blue-800 dark:text-blue-200 font-medium">
-                    {name ? name.charAt(0).toUpperCase() : "U"}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-white" />
                   </div>
-                  <span className="text-gray-700 dark:text-gray-300 text-sm hidden sm:inline">
-                    {name}({currentUserRole})
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Admin
                   </span>
-                  <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem>
@@ -123,35 +170,23 @@ export default function DashboardLayout({
                     className="flex items-center gap-2 w-full"
                   >
                     <User className="w-4 h-4" />
-                    <span>Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link
-                    href="/dashboard/settings"
-                    className="flex items-center gap-2 w-full"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
+                    Profile
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <button
-                    onClick={() => logOut()}
-                    className="flex items-center gap-2 w-full text-red-600 dark:text-red-400"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Log Out</span>
-                  </button>
+                <DropdownMenuItem
+                  onClick={logOut}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </header>
 
-        {/* Page Content */}
-        <div className="flex-1 p-6 overflow-auto">{children}</div>
+        <div className="flex-1 p-6">{children}</div>
       </main>
     </div>
   );

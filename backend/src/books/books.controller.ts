@@ -7,21 +7,48 @@ import {
   Body,
   Param,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { JwtMiddleware } from '../auth/jwt.middleware';
 
-@Controller('api/books')
+@Controller('/books')
 @UseGuards(JwtMiddleware)
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
   @Get()
-  async getAllBooks() {
-    const books = await this.booksService.findAll();
+  async getAllBooks(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+  ) {
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 10;
+
+    // Ensure reasonable limits
+    const validLimit = Math.min(Math.max(limitNum, 1), 100);
+
+    const result = await this.booksService.findAll(
+      pageNum,
+      validLimit,
+      search,
+      category,
+    );
     return {
       message: 'Books retrieved successfully',
-      data: books,
+      data: result.books,
+      pagination: result.pagination,
+    };
+  }
+
+  @Get('categories')
+  async getCategories() {
+    const categories = await this.booksService.getCategories();
+    return {
+      message: 'Categories retrieved successfully',
+      data: categories,
     };
   }
 

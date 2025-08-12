@@ -149,7 +149,13 @@ export default function LibraryAuth() {
           })
         );
 
-        window.location.href = "/dashboard";
+        // Smooth transition with loading state
+        toast.success("Login successful! Redirecting...", { id: loadingToast });
+
+        // Add a delay for smooth transition
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1500);
       } else {
         const errorData = await response.json();
         toast.error(errorData.message || "Invalid credentials", {
