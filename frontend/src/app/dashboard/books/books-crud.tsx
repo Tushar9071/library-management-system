@@ -527,71 +527,93 @@ export default function BooksPage() {
 
       {/* Edit Book Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+        <DialogContent
+          className="w-full max-w-2xl bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 border border-indigo-700 shadow-xl rounded-xl"
+          style={{ maxHeight: "80vh", overflowY: "auto" }}
+        >
           <DialogHeader>
-            <DialogTitle>Edit Book</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-white">
+              <Edit className="h-6 w-6 text-indigo-400" />
+              Edit Book
+            </DialogTitle>
+            <DialogDescription className="text-indigo-200">
               Update book information and details.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-title">Title</Label>
-              <Input
-                id="edit-title"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, title: e.target.value }))
-                }
-                placeholder="Enter book title"
-              />
+          <div className="grid md:grid-cols-2 gap-6 py-4">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title" className="text-indigo-300">
+                  Title
+                </Label>
+                <Input
+                  id="edit-title"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, title: e.target.value }))
+                  }
+                  placeholder="Enter book title"
+                  className="bg-slate-800 text-white border-indigo-600"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-author" className="text-indigo-300">
+                  Author
+                </Label>
+                <Input
+                  id="edit-author"
+                  value={formData.author}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, author: e.target.value }))
+                  }
+                  placeholder="Enter author name"
+                  className="bg-slate-800 text-white border-indigo-600"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-isbn" className="text-indigo-300">
+                  ISBN
+                </Label>
+                <Input
+                  id="edit-isbn"
+                  value={formData.isbn}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, isbn: e.target.value }))
+                  }
+                  placeholder="Enter ISBN"
+                  className="bg-slate-800 text-white border-indigo-600"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description" className="text-indigo-300">
+                  Description
+                </Label>
+                <Textarea
+                  id="edit-description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter book description"
+                  className="bg-slate-800 text-white border-indigo-600"
+                />
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-author">Author</Label>
-              <Input
-                id="edit-author"
-                value={formData.author}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, author: e.target.value }))
-                }
-                placeholder="Enter author name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-isbn">ISBN</Label>
-              <Input
-                id="edit-isbn"
-                value={formData.isbn}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, isbn: e.target.value }))
-                }
-                placeholder="Enter ISBN"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
-                placeholder="Enter book description"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-category">Category</Label>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-category" className="text-indigo-300">
+                  Category
+                </Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, category: value }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-slate-800 text-white border-indigo-600">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -603,8 +625,10 @@ export default function BooksPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-publishedYear">Published Year</Label>
+              <div>
+                <Label htmlFor="edit-publishedYear" className="text-indigo-300">
+                  Published Year
+                </Label>
                 <Input
                   id="edit-publishedYear"
                   type="number"
@@ -616,12 +640,13 @@ export default function BooksPage() {
                     }))
                   }
                   placeholder="Year"
+                  className="bg-slate-800 text-white border-indigo-600"
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-totalCopies">Total Copies</Label>
+              <div>
+                <Label htmlFor="edit-totalCopies" className="text-indigo-300">
+                  Total Copies
+                </Label>
                 <Input
                   id="edit-totalCopies"
                   type="number"
@@ -633,10 +658,16 @@ export default function BooksPage() {
                       totalCopies: parseInt(e.target.value),
                     }))
                   }
+                  className="bg-slate-800 text-white border-indigo-600"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-availableCopies">Available Copies</Label>
+              <div>
+                <Label
+                  htmlFor="edit-availableCopies"
+                  className="text-indigo-300"
+                >
+                  Available Copies
+                </Label>
                 <Input
                   id="edit-availableCopies"
                   type="number"
@@ -649,27 +680,30 @@ export default function BooksPage() {
                       availableCopies: parseInt(e.target.value),
                     }))
                   }
+                  className="bg-slate-800 text-white border-indigo-600"
                 />
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, status: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="checked_out">Checked Out</SelectItem>
-                  <SelectItem value="reserved">Reserved</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                </SelectContent>
-              </Select>
+              <div>
+                <Label htmlFor="edit-status" className="text-indigo-300">
+                  Status
+                </Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, status: value }))
+                  }
+                >
+                  <SelectTrigger className="bg-slate-800 text-white border-indigo-600">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="checked_out">Checked Out</SelectItem>
+                    <SelectItem value="reserved">Reserved</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <DialogFooter>

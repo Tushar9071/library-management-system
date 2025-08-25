@@ -682,9 +682,9 @@ export default function BooksPage() {
               )}
             </CardContent>
           </Card>
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
+          <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
             {/* Header Section */}
-            <div className="relative overflow-hidden">
+            <div className="relative overflow-hidden flex-shrink-0">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
               <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
                 <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
@@ -708,15 +708,16 @@ export default function BooksPage() {
             </div>
 
             {/* Progress Bar */}
-            <div className="px-6 pt-4">
+            <div className="px-6 pt-4 flex-shrink-0">
               <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse"></div>
               </div>
             </div>
 
-            {/* Form Content */}
+            {/* Form Content - Scrollable */}
             <div className="flex-1 overflow-y-auto px-6 py-6">
               <form
+                id="create-book-form"
                 onSubmit={(e) => {
                   e.preventDefault();
                   createBook();
@@ -1096,25 +1097,28 @@ export default function BooksPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsCreateOpen(false)}
-                    className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
-                  >
-                    ❌ Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[140px]"
-                  >
-                    <Plus className="mr-2 h-5 w-5" />✨ Add Book
-                  </Button>
-                </div>
               </form>
+            </div>
+
+            {/* Fixed Footer with Action Buttons */}
+            <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
+                >
+                  ❌ Cancel
+                </Button>
+                <Button
+                  form="create-book-form"
+                  type="submit"
+                  className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[140px]"
+                >
+                  <Plus className="mr-2 h-5 w-5" />✨ Add Book
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -1696,9 +1700,9 @@ export default function BooksPage() {
 
         {/* Edit Book Dialog */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-hidden bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
+          <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
             {/* Header Section */}
-            <div className="relative overflow-hidden">
+            <div className="relative overflow-hidden flex-shrink-0">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
               <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
                 <div className="p-4 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
@@ -1722,15 +1726,16 @@ export default function BooksPage() {
             </div>
 
             {/* Progress Bar */}
-            <div className="px-6 pt-4">
+            <div className="px-6 pt-4 flex-shrink-0">
               <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 rounded-full animate-pulse"></div>
               </div>
             </div>
 
-            {/* Form Content */}
+            {/* Form Content - Scrollable */}
             <div className="flex-1 overflow-y-auto px-6 py-6">
               <form
+                id="edit-book-form"
                 onSubmit={(e) => {
                   e.preventDefault();
                   updateBook();
@@ -2110,25 +2115,28 @@ export default function BooksPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200/50 dark:border-gray-700/50">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditOpen(false)}
-                    className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
-                  >
-                    ❌ Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-600 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[160px]"
-                  >
-                    <Edit className="mr-2 h-5 w-5" />✨ Update Book
-                  </Button>
-                </div>
               </form>
+            </div>
+
+            {/* Fixed Footer with Action Buttons */}
+            <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditOpen(false)}
+                  className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
+                >
+                  ❌ Cancel
+                </Button>
+                <Button
+                  form="edit-book-form"
+                  type="submit"
+                  className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-600 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[160px]"
+                >
+                  <Edit className="mr-2 h-5 w-5" />✨ Update Book
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
