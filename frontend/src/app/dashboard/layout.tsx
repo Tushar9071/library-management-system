@@ -76,13 +76,13 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <aside
         className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 shadow-lg transform transition-transform duration-300 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 shadow-lg transform transition-transform duration-300 ease-in-out flex flex-col
         ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }
       `}
       >
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="bg-blue-600 dark:bg-blue-500 p-2 rounded-lg">
               <BookOpen className="w-6 h-6 text-white" />
@@ -106,7 +106,7 @@ export default function DashboardLayout({
           </Button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -133,8 +133,8 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col">
-        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between shadow-sm">
+      <main className="flex-1 flex flex-col min-h-screen lg:min-h-0">
+        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between shadow-sm flex-shrink-0">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -186,7 +186,7 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        <div className="flex-1 p-6">{children}</div>
+        <div className="flex-1 p-6 overflow-y-auto">{children}</div>
       </main>
     </div>
   );

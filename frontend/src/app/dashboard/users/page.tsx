@@ -299,15 +299,29 @@ export default function UsersPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-green-400 to-emerald-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow">
+            ✅ Active
+          </Badge>
+        );
       case "inactive":
-        return <Badge className="bg-red-100 text-red-800">Inactive</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-red-400 to-pink-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            ❌ Inactive
+          </Badge>
+        );
       case "suspended":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800">Suspended</Badge>
+          <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+            ⏸️ Suspended
+          </Badge>
         );
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return (
+          <Badge className="bg-gradient-to-r from-gray-400 to-gray-500 text-white border-0 shadow-lg">
+            ❓ {status}
+          </Badge>
+        );
     }
   };
 
@@ -460,112 +474,253 @@ export default function UsersPage() {
               )}
             </CardContent>
           </Card>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Create New User</DialogTitle>
-              <DialogDescription>
-                Add a new user to the system.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, phone: e.target.value }))
-                  }
-                  placeholder="Enter phone number"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter password"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="role">Role</Label>
-                <Select
-                  value={formData.roleId}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, roleId: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        {role.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, status: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="suspended">Suspended</SelectItem>
-                  </SelectContent>
-                </Select>
+          <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
+            {/* Header Section */}
+            <div className="relative overflow-hidden flex-shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
+              <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                  <Users className="h-8 w-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                    ✨ Create New User
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                    Add a new user to your library management system with role
+                    assignments and permissions.
+                  </DialogDescription>
+                </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={createUser}>Create User</Button>
-            </DialogFooter>
+
+            {/* Progress Bar */}
+            <div className="px-6 pt-4 flex-shrink-0">
+              <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 h-full w-full animate-pulse"></div>
+              </div>
+            </div>
+
+            {/* Form Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              <form
+                id="create-user-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  createUser();
+                }}
+                className="space-y-6"
+              >
+                {/* Personal Information */}
+                <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
+                  <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
+                    👤 Personal Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="name"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                      >
+                        <Users className="h-4 w-4 text-blue-500" />
+                        Full Name *
+                      </Label>
+                      <Input
+                        id="name"
+                        placeholder="Enter full name (e.g., John Doe)"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        required
+                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="phone"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                      >
+                        <Phone className="h-4 w-4 text-indigo-500" />
+                        Phone Number
+                      </Label>
+                      <Input
+                        id="phone"
+                        placeholder="Enter phone number (e.g., +1-234-567-8900)"
+                        value={formData.phone}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Information */}
+                <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
+                  <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
+                    🔐 Account Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="email"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                      >
+                        <Mail className="h-4 w-4 text-purple-500" />
+                        Email Address *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Enter email address"
+                        value={formData.email}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                        required
+                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all duration-300"
+                      />
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="password"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                      >
+                        <span className="text-pink-500">🔒</span>
+                        Password *
+                      </Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="Enter secure password"
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }))
+                        }
+                        required
+                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-pink-500 focus:ring-4 focus:ring-pink-200 dark:focus:ring-pink-800 transition-all duration-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Role and Permissions */}
+                <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-700/30">
+                  <h3 className="text-lg font-bold text-green-700 dark:text-green-300 mb-4 flex items-center gap-2">
+                    🎭 Role & Status
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label
+                        htmlFor="role"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                      >
+                        <span className="text-green-500">👑</span>
+                        User Role *
+                      </Label>
+                      <Select
+                        value={formData.roleId}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({ ...prev, roleId: value }))
+                        }
+                      >
+                        <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-200 dark:focus:ring-green-800 transition-all duration-300">
+                          <SelectValue placeholder="👤 Select user role" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                          {roles.map((role) => (
+                            <SelectItem
+                              key={role.id}
+                              value={role.id}
+                              className="rounded-lg hover:bg-green-50 dark:hover:bg-green-900/50"
+                            >
+                              🔑 {role.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label
+                        htmlFor="status"
+                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                      >
+                        <span className="text-emerald-500">📊</span>
+                        Account Status
+                      </Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) =>
+                          setFormData((prev) => ({ ...prev, status: value }))
+                        }
+                      >
+                        <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all duration-300">
+                          <SelectValue placeholder="📊 Select status" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                          <SelectItem
+                            value="active"
+                            className="rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/50"
+                          >
+                            ✅ Active
+                          </SelectItem>
+                          <SelectItem
+                            value="inactive"
+                            className="rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50"
+                          >
+                            ❌ Inactive
+                          </SelectItem>
+                          <SelectItem
+                            value="suspended"
+                            className="rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/50"
+                          >
+                            ⏸️ Suspended
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Fixed Footer with Action Buttons */}
+            <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
+              <div className="flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
+                >
+                  ❌ Cancel
+                </Button>
+                <Button
+                  form="create-user-form"
+                  type="submit"
+                  className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[160px]"
+                >
+                  <Plus className="mr-2 h-5 w-5" />✨ Create User
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
-
       {/* Enhanced Users Display */}
       <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-2xl rounded-2xl overflow-hidden animate-fade-in">
         <CardHeader className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 text-white p-6">
@@ -588,63 +743,135 @@ export default function UsersPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/50 border-0">
-                    <TableHead className="font-bold text-gray-700 dark:text-gray-300 py-4">
-                      👤 Name
+                    <TableHead className="font-bold text-gray-700 dark:text-gray-300 py-4 pl-6">
+                      👤 User Details
                     </TableHead>
                     <TableHead className="font-bold text-gray-700 dark:text-gray-300">
-                      📧 Email
+                      📞 Contact Info
                     </TableHead>
                     <TableHead className="font-bold text-gray-700 dark:text-gray-300">
-                      📱 Phone
+                      🔑 Role & Status
                     </TableHead>
                     <TableHead className="font-bold text-gray-700 dark:text-gray-300">
-                      🔑 Role
+                      📅 Activity
                     </TableHead>
-                    <TableHead className="font-bold text-gray-700 dark:text-gray-300">
-                      📊 Status
-                    </TableHead>
-                    <TableHead className="font-bold text-gray-700 dark:text-gray-300">
-                      📅 Last Login
-                    </TableHead>
-                    <TableHead className="font-bold text-gray-700 dark:text-gray-300">
+                    <TableHead className="font-bold text-gray-700 dark:text-gray-300 text-center">
                       ⚡ Actions
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {users.map((user, index) => (
                     <TableRow
                       key={user.id}
-                      className="cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 transition-all duration-300"
+                      className="group cursor-pointer hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 transition-all duration-300 border-b border-gray-100 dark:border-gray-700/50 hover:border-blue-200 dark:hover:border-blue-600/50"
                       onClick={() => handleViewDetails(user)}
+                      style={{ animationDelay: `${index * 100}ms` }}
                     >
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-400" />
-                          {user.email}
+                      {/* User Details */}
+                      <TableCell className="pl-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/50 dark:to-purple-900/50 rounded-xl flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                              <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+                              {user.name}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              <Mail className="h-4 w-4" />
+                              <span
+                                className="truncate max-w-[200px]"
+                                title={user.email}
+                              >
+                                {user.email}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-gray-400" />
-                          {user.phone}
+
+                      {/* Contact Info */}
+                      <TableCell className="py-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                              <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                            </div>
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              {user.phone || "Not provided"}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            📧 Primary contact
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{user.role.name}</Badge>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(user.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          {user.lastLogin
-                            ? new Date(user.lastLogin).toLocaleDateString()
-                            : "Never"}
+
+                      {/* Role & Status */}
+                      <TableCell className="py-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Role:
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:scale-105 transition-transform duration-300"
+                            >
+                              🔑 {user.role.name}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Status:
+                            </span>
+                            {getStatusBadge(user.status)}
+                          </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
+
+                      {/* Activity */}
+                      <TableCell className="py-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <div>
+                              <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {user.lastLogin
+                                  ? new Date(user.lastLogin).toLocaleDateString(
+                                      "en-US",
+                                      {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric",
+                                      }
+                                    )
+                                  : "Never"}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Last login
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Member since:{" "}
+                            {new Date(user.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                month: "short",
+                                year: "numeric",
+                              }
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="py-4 text-center">
+                        <div className="flex items-center justify-center gap-3">
                           <Button
                             variant="outline"
                             size="sm"
@@ -652,34 +879,48 @@ export default function UsersPage() {
                               e.stopPropagation();
                               handleEdit(user);
                             }}
+                            className="w-10 h-10 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800 dark:hover:to-indigo-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
-                                variant="destructive"
+                                variant="outline"
                                 size="sm"
                                 onClick={(e) => e.stopPropagation()}
+                                className="w-10 h-10 p-0 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/50 dark:to-pink-900/50 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-pink-100 dark:hover:from-red-800 dark:hover:to-pink-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="rounded-2xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20">
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this user?
-                                  This action cannot be undone.
+                                <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                  🗑️ Delete User Account
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base">
+                                  Are you sure you want to permanently delete{" "}
+                                  <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded">
+                                    "{user.name}"
+                                  </span>
+                                  ?<br />
+                                  <span className="text-red-600 dark:text-red-400 font-medium">
+                                    ⚠️ This action cannot be undone and will
+                                    remove all associated data.
+                                  </span>
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogFooter className="gap-3">
+                                <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
+                                  Cancel
+                                </AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => deleteUser(user.id)}
-                                  className="bg-red-600 hover:bg-red-700"
+                                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                                 >
-                                  Delete
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete User
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -698,35 +939,56 @@ export default function UsersPage() {
             {users.map((user, index) => (
               <Card
                 key={user.id}
-                className="group bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/30 border-0 shadow-lg hover:shadow-2xl rounded-2xl overflow-hidden transform hover:scale-[1.02] transition-all duration-500 animate-slide-in cursor-pointer"
+                className="group bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 dark:from-gray-800 dark:via-blue-900/20 dark:to-purple-900/20 border-0 shadow-xl hover:shadow-2xl rounded-3xl overflow-hidden transform hover:scale-[1.02] transition-all duration-500 animate-slide-in cursor-pointer backdrop-blur-sm"
                 style={{ animationDelay: `${index * 150}ms` }}
                 onClick={() => handleViewDetails(user)}
               >
                 <CardContent className="p-0">
-                  {/* Gradient Header */}
-                  <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 p-4 text-white">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3
-                          className="font-bold text-lg break-words mb-2"
-                          title={user.name}
-                        >
-                          👤 {user.name}
-                        </h3>
-                        <div className="flex items-center gap-2 text-blue-100">
-                          <div className="p-1 bg-white/20 rounded-lg">
-                            <Mail className="h-4 w-4" />
+                  {/* Enhanced Gradient Header */}
+                  <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-6 text-white overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-indigo-600/20 backdrop-blur-3xl"></div>
+                    <div className="relative flex items-start justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="relative">
+                          <div className="w-16 h-16 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl flex items-center justify-center border-2 border-white/30 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <Users className="h-8 w-8 text-white" />
                           </div>
-                          <span
-                            className="break-words font-medium"
-                            title={user.email}
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-white">
+                              {user.status === "active" ? "✓" : "!"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3
+                            className="font-bold text-xl text-white mb-2 truncate"
+                            title={user.name}
                           >
-                            {user.email}
-                          </span>
+                            {user.name}
+                          </h3>
+                          <div className="flex items-center gap-2 text-blue-100">
+                            <div className="p-1 bg-white/20 rounded-lg">
+                              <Mail className="h-4 w-4" />
+                            </div>
+                            <span
+                              className="break-words font-medium text-sm"
+                              title={user.email}
+                            >
+                              {user.email}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-blue-100 mt-1">
+                            <Badge
+                              variant="outline"
+                              className="bg-white/20 border-white/30 text-white text-xs hover:bg-white/30 transition-colors duration-300"
+                            >
+                              🔑 {user.role.name}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex gap-2 flex-shrink-0">
+                      <div className="flex flex-col gap-2 flex-shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
@@ -734,7 +996,7 @@ export default function UsersPage() {
                             e.stopPropagation();
                             handleEdit(user);
                           }}
-                          className="bg-white/20 hover:bg-white/30 border-white/30 text-white hover:scale-110 transition-all duration-300 rounded-xl"
+                          className="w-10 h-10 p-0 bg-white/20 hover:bg-white/30 border-white/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -744,32 +1006,37 @@ export default function UsersPage() {
                               variant="outline"
                               size="sm"
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl"
+                              className="w-10 h-10 p-0 bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
+                          <AlertDialogContent className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20 max-w-md">
                             <AlertDialogHeader>
-                              <AlertDialogTitle className="text-xl font-bold text-red-600">
+                              <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
                                 🗑️ Delete User
                               </AlertDialogTitle>
-                              <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
-                                Are you sure you want to delete{" "}
-                                <span className="font-semibold text-gray-900 dark:text-white">
+                              <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
+                                Are you sure you want to permanently delete{" "}
+                                <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded-lg">
                                   "{user.name}"
                                 </span>
-                                ? This action cannot be undone.
+                                ?<br />
+                                <br />
+                                <span className="text-red-600 dark:text-red-400 font-medium">
+                                  ⚠️ This action cannot be undone.
+                                </span>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel className="rounded-xl">
+                            <AlertDialogFooter className="gap-3">
+                              <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
                                 Cancel
                               </AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => deleteUser(user.id)}
-                                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
+                                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                               >
+                                <Trash2 className="mr-2 h-4 w-4" />
                                 Delete User
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -779,72 +1046,122 @@ export default function UsersPage() {
                     </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="p-4 space-y-4">
-                    {/* Phone */}
-                    <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                      <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-lg">
-                        <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-green-600 dark:text-green-400 font-medium">
-                          Phone
+                  {/* Enhanced Content Section */}
+                  <div className="p-6 space-y-4 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50">
+                    {/* Contact Information */}
+                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-700/30">
+                      <h4 className="text-sm font-bold text-green-700 dark:text-green-300 mb-3 flex items-center gap-2">
+                        📞 Contact Information
+                      </h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-xl">
+                            <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                              Phone Number
+                            </div>
+                            <span
+                              className="font-semibold text-gray-900 dark:text-white"
+                              title={user.phone}
+                            >
+                              {user.phone || "Not provided"}
+                            </span>
+                          </div>
                         </div>
-                        <span
-                          className="font-semibold text-gray-900 dark:text-white break-all"
-                          title={user.phone}
-                        >
-                          {user.phone}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-xl">
+                            <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                              Email Address
+                            </div>
+                            <span
+                              className="font-semibold text-gray-900 dark:text-white text-sm break-all"
+                              title={user.email}
+                            >
+                              {user.email}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Details Grid */}
+                    {/* Status and Role Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                        <div className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">
-                          🔑 Role
+                      <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
+                        <div className="text-xs text-purple-600 dark:text-purple-400 font-bold mb-2 flex items-center gap-1">
+                          🎭 Role
                         </div>
                         <Badge
                           variant="outline"
-                          className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300"
+                          className="w-full justify-center bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/50 dark:to-pink-900/50 border-purple-300 dark:border-purple-600 text-purple-700 dark:text-purple-300 hover:scale-105 transition-transform duration-300"
                         >
                           {user.role?.name || "No Role"}
                         </Badge>
                       </div>
 
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">
+                      <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
+                        <div className="text-xs text-blue-600 dark:text-blue-400 font-bold mb-2 flex items-center gap-1">
                           📊 Status
                         </div>
-                        <Badge
-                          variant={
-                            user.status === "active" ? "default" : "secondary"
-                          }
-                          className={
-                            user.status === "active"
-                              ? "bg-gradient-to-r from-green-400 to-emerald-500 text-white border-0 shadow-lg"
-                              : "bg-gradient-to-r from-gray-400 to-gray-500 text-white border-0 shadow-lg"
-                          }
-                        >
-                          {user.status === "active"
-                            ? "✅ Active"
-                            : "❌ Inactive"}
-                        </Badge>
+                        <div className="flex justify-center">
+                          {getStatusBadge(user.status)}
+                        </div>
                       </div>
+                    </div>
 
-                      <div className="col-span-2 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
-                        <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-1">
-                          📅 Last Login
+                    {/* Activity Information */}
+                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl border border-indigo-200/50 dark:border-indigo-700/30">
+                      <h4 className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                        📅 Account Activity
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-1">
+                            Last Login
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-indigo-500" />
+                            <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                              {user.lastLogin
+                                ? new Date(user.lastLogin).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                    }
+                                  )
+                                : "Never"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-indigo-500" />
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {user.lastLogin
-                              ? new Date(user.lastLogin).toLocaleDateString()
-                              : "Never"}
-                          </span>
+                        <div>
+                          <div className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mb-1">
+                            Member Since
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-indigo-500" />
+                            <span className="font-semibold text-gray-900 dark:text-white text-sm">
+                              {new Date(user.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  year: "numeric",
+                                }
+                              )}
+                            </span>
+                          </div>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Action Hint */}
+                    <div className="text-center py-2">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1 inline-flex items-center gap-1">
+                        👆 Tap card for full details
                       </div>
                     </div>
                   </div>
@@ -854,7 +1171,6 @@ export default function UsersPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Enhanced Pagination Controls */}
       {pagination && pagination.totalPages > 1 && (
         <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-slide-up">
@@ -947,7 +1263,6 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       )}
-
       {/* Enhanced No Results */}
       {users.length === 0 && !loading && (
         <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-bounce-in">
@@ -1009,113 +1324,253 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       )}
-
       {/* Edit User Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
-              Update user information and settings.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name">Full Name</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                placeholder="Enter full name"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-email">Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, email: e.target.value }))
-                }
-                placeholder="Enter email address"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-phone">Phone</Label>
-              <Input
-                id="edit-phone"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, phone: e.target.value }))
-                }
-                placeholder="Enter phone number"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-password">
-                New Password (leave blank to keep current)
-              </Label>
-              <Input
-                id="edit-password"
-                type="password"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, password: e.target.value }))
-                }
-                placeholder="Enter new password"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-role">Role</Label>
-              <Select
-                value={formData.roleId}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, roleId: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, status: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="suspended">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
+          {/* Header Section */}
+          <div className="relative overflow-hidden flex-shrink-0">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
+            <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+              <div className="p-3 bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl shadow-lg">
+                <Edit className="h-8 w-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  ✏️ Edit User Details
+                </DialogTitle>
+                <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                  Update user information, role assignments, and account
+                  settings with enhanced security controls.
+                </DialogDescription>
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={updateUser}>Update User</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
+          {/* Progress Bar */}
+          <div className="px-6 pt-4 flex-shrink-0">
+            <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 h-full w-full animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Form Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <form
+              id="edit-user-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateUser();
+              }}
+              className="space-y-6"
+            >
+              {/* Personal Information */}
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
+                <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
+                  👤 Personal Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="edit-name"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <Users className="h-4 w-4 text-blue-500" />
+                      Full Name *
+                    </Label>
+                    <Input
+                      id="edit-name"
+                      placeholder="Enter full name (e.g., John Doe)"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
+                      required
+                      className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="edit-phone"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <Phone className="h-4 w-4 text-indigo-500" />
+                      Phone Number
+                    </Label>
+                    <Input
+                      id="edit-phone"
+                      placeholder="Enter phone number (e.g., +1-234-567-8900)"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
+                      className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Information */}
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
+                <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
+                  🔐 Account Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="edit-email"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <Mail className="h-4 w-4 text-purple-500" />
+                      Email Address *
+                    </Label>
+                    <Input
+                      id="edit-email"
+                      type="email"
+                      placeholder="Enter email address"
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      required
+                      className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all duration-300"
+                    />
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="edit-password"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <span className="text-pink-500">🔒</span>
+                      New Password (optional)
+                    </Label>
+                    <Input
+                      id="edit-password"
+                      type="password"
+                      placeholder="Leave blank to keep current password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                        }))
+                      }
+                      className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-pink-500 focus:ring-4 focus:ring-pink-200 dark:focus:ring-pink-800 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Role and Permissions */}
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-700/30">
+                <h3 className="text-lg font-bold text-green-700 dark:text-green-300 mb-4 flex items-center gap-2">
+                  🎭 Role & Status
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label
+                      htmlFor="edit-role"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <span className="text-green-500">👑</span>
+                      User Role *
+                    </Label>
+                    <Select
+                      value={formData.roleId}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({ ...prev, roleId: value }))
+                      }
+                    >
+                      <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-200 dark:focus:ring-green-800 transition-all duration-300">
+                        <SelectValue placeholder="👤 Select user role" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                        {roles.map((role) => (
+                          <SelectItem
+                            key={role.id}
+                            value={role.id}
+                            className="rounded-lg hover:bg-green-50 dark:hover:bg-green-900/50"
+                          >
+                            🔑 {role.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label
+                      htmlFor="edit-status"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                    >
+                      <span className="text-emerald-500">📊</span>
+                      Account Status
+                    </Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({ ...prev, status: value }))
+                      }
+                    >
+                      <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all duration-300">
+                        <SelectValue placeholder="📊 Select status" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                        <SelectItem
+                          value="active"
+                          className="rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/50"
+                        >
+                          ✅ Active
+                        </SelectItem>
+                        <SelectItem
+                          value="inactive"
+                          className="rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50"
+                        >
+                          ❌ Inactive
+                        </SelectItem>
+                        <SelectItem
+                          value="suspended"
+                          className="rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/50"
+                        >
+                          ⏸️ Suspended
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Fixed Footer with Action Buttons */}
+          <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
+            <div className="flex justify-end gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditOpen(false)}
+                className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
+              >
+                ❌ Cancel
+              </Button>
+              <Button
+                form="edit-user-form"
+                type="submit"
+                className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[160px]"
+              >
+                <Edit className="mr-2 h-5 w-5" />✨ Update User
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>{" "}
       {/* User Details Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
