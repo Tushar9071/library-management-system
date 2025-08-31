@@ -9,14 +9,16 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UserRoleService } from '../user-role/user-role.service';
-import { JwtMiddleware } from '../auth/jwt.middleware';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermissions } from '../auth/permissions.decorator';
 
 @Controller('/roles')
-@UseGuards(JwtMiddleware)
+@UseGuards(PermissionGuard)
 export class RolesController {
   constructor(private readonly userRoleService: UserRoleService) {}
 
   @Get()
+  @RequirePermissions('READ_ROLES')
   async getAllRoles() {
     const roles = await this.userRoleService.getAllRoles();
     const roleData = roles.map((role) => ({
@@ -35,6 +37,7 @@ export class RolesController {
   }
 
   @Get(':id')
+  @RequirePermissions('READ_ROLES')
   async getRoleById(@Param('id') id: string) {
     const role = await this.userRoleService.getRoleById(parseInt(id));
     const roleData = {
@@ -53,6 +56,7 @@ export class RolesController {
   }
 
   @Post()
+  @RequirePermissions('CREATE_ROLES')
   async createRole(
     @Body()
     createRoleDto: {
@@ -78,6 +82,7 @@ export class RolesController {
   }
 
   @Put(':id')
+  @RequirePermissions('UPDATE_ROLES')
   async updateRole(
     @Param('id') id: string,
     @Body()
@@ -103,6 +108,7 @@ export class RolesController {
   }
 
   @Delete(':id')
+  @RequirePermissions('DELETE_ROLES')
   async deleteRole(@Param('id') id: string) {
     const result = await this.userRoleService.deleteRole(parseInt(id));
     return {

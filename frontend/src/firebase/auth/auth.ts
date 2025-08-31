@@ -28,13 +28,14 @@ export const signInWithGoogle = async (auth: Auth) => {
     const userData = await response.json();
     console.log(userData);
 
-    // Store user data in localStorage
+    // Store user data in localStorage with fallback values
     localStorage.setItem(
       "userData",
       JSON.stringify({
-        id: userData.id,
-        email: userData.email,
-        role: userData.role,
+        id: userData.id || "",
+        email: userData.email || user.email,
+        role: userData.role || "public user",
+        name: userData.name || "",
       })
     );
 
@@ -65,13 +66,14 @@ export const signInWithGithub = async (auth: Auth) => {
   if (response.ok) {
     const userData = await response.json();
 
-    // Store user data in localStorage
+    // Store user data in localStorage with fallback values
     localStorage.setItem(
       "userData",
       JSON.stringify({
-        id: userData.id,
-        email: userData.email,
-        role: userData.role,
+        id: userData.id || "",
+        email: userData.email || user.email,
+        role: userData.role || "public user",
+        name: userData.name || "",
       })
     );
 

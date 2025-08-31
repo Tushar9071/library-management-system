@@ -17,10 +17,21 @@ const initUserData = (): userStore => {
   if (typeof window !== "undefined") {
     const userData = localStorage.getItem("userData");
     if (userData) {
-      return JSON.parse(userData);
+      try {
+        const parsed = JSON.parse(userData);
+        // Ensure all required fields have fallback values
+        return {
+          id: parsed.id || "",
+          email: parsed.email || "",
+          role: parsed.role || "public user", // Default role instead of empty string
+          name: parsed.name || "",
+        };
+      } catch (error) {
+        console.error("Error parsing user data from localStorage:", error);
+      }
     }
   }
-  return { id: "", email: "", role: "", name: "" };
+  return { id: "", email: "", role: "public user", name: "" }; // Default role here too
 };
 
 export const userStore = create<userStore & userActions>((set) => ({

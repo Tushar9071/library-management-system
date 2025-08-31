@@ -8,6 +8,9 @@ export const logOut = async () => {
     });
 
     if (response.ok) {
+      // Clear all authentication data
+      localStorage.removeItem('userData');
+      localStorage.removeItem('authToken');
       localStorage.clear();
       window.location.href = "/auth";
     } else {

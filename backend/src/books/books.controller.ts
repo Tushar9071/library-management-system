@@ -10,14 +10,34 @@ import {
   Query,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
-import { JwtMiddleware } from '../auth/jwt.middleware';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermissions } from '../auth/permissions.decorator';
 
 @Controller('/books')
-@UseGuards(JwtMiddleware)
+@UseGuards(PermissionGuard)
 export class BooksController {
   constructor(private readonly booksService: BooksService) {}
 
+  @Get('test-no-auth')
+  async getTestBooks() {
+    try {
+      const result = await this.booksService.findAll(1, 10);
+      return {
+        message: 'Test books retrieved successfully (no auth)',
+        data: result.books,
+        pagination: result.pagination,
+      };
+    } catch (error) {
+      return {
+        message: 'Error retrieving books',
+        error: error.message,
+        stack: error.stack,
+      };
+    }
+  }
+
   @Get()
+  @RequirePermissions('READ_BOOKS')
   async getAllBooks(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -44,6 +64,7 @@ export class BooksController {
   }
 
   @Get('categories')
+  @RequirePermissions('READ_BOOKS')
   async getCategories() {
     const categories = await this.booksService.getCategories();
     return {
@@ -53,6 +74,7 @@ export class BooksController {
   }
 
   @Get(':id')
+  @RequirePermissions('READ_BOOKS')
   async getBookById(@Param('id') id: string) {
     const book = await this.booksService.findById(parseInt(id));
     return {
@@ -62,6 +84,7 @@ export class BooksController {
   }
 
   @Post()
+  @RequirePermissions('CREATE_BOOKS')
   async createBook(@Body() createBookDto: any) {
     const book = await this.booksService.create(createBookDto);
     return {
@@ -71,6 +94,7 @@ export class BooksController {
   }
 
   @Put(':id')
+  @RequirePermissions('UPDATE_BOOKS')
   async updateBook(@Param('id') id: string, @Body() updateBookDto: any) {
     const book = await this.booksService.update(parseInt(id), updateBookDto);
     return {
@@ -80,6 +104,7 @@ export class BooksController {
   }
 
   @Delete(':id')
+  @RequirePermissions('DELETE_BOOKS')
   async deleteBook(@Param('id') id: string) {
     await this.booksService.delete(parseInt(id));
     return {

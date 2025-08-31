@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProtectedFeature, ProtectedAction } from "@/components/ProtectedFeature";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus,
@@ -117,12 +119,13 @@ export default function RolesPage() {
   const fetchRoles = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/roles");
+      const response = await apiGet("/roles");
       if (response.ok) {
         const data = await response.json();
         setRoles(toRoleArray(data));
       } else {
-        toast.error("Failed to fetch roles");
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to fetch roles");
         setRoles([]);
       }
     } catch (error) {
@@ -141,11 +144,7 @@ export default function RolesPage() {
     }
 
     try {
-      const response = await fetch("/api/roles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      const response = await apiPost("/roles", formData);
 
       if (response.ok) {
         const payload = await response.json();
@@ -155,7 +154,8 @@ export default function RolesPage() {
         setIsCreateDialogOpen(false);
         toast.success("Role created successfully");
       } else {
-        toast.error("Failed to create role");
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to create role");
       }
     } catch (error) {
       console.error("Error creating role:", error);
@@ -170,11 +170,7 @@ export default function RolesPage() {
     }
 
     try {
-      const response = await fetch(`/api/roles/${editingRole.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      const response = await apiPut(`/roles/${editingRole.id}`, formData);
 
       if (response.ok) {
         const payload = await response.json();
@@ -186,7 +182,8 @@ export default function RolesPage() {
         setEditingRole(null);
         toast.success("Role updated successfully");
       } else {
-        toast.error("Failed to update role");
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to update role");
       }
     } catch (error) {
       console.error("Error updating role:", error);
@@ -196,15 +193,14 @@ export default function RolesPage() {
 
   const handleDelete = async (roleId: string) => {
     try {
-      const response = await fetch(`/api/roles/${roleId}`, {
-        method: "DELETE",
-      });
+      const response = await apiDelete(`/roles/${roleId}`);
 
       if (response.ok) {
         setRoles(roles.filter((r) => r.id !== roleId));
         toast.success("Role deleted successfully");
       } else {
-        toast.error("Failed to delete role");
+        const errorData = await response.json();
+        toast.error(errorData.message || "Failed to delete role");
       }
     } catch (error) {
       console.error("Error deleting role:", error);
@@ -305,16 +301,17 @@ export default function RolesPage() {
             </p>
           </div>
 
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 gap-2">
-                <Plus className="h-5 w-5" />
-                Add Role
-              </Button>
-            </DialogTrigger>
+          <ProtectedAction resource="roles" action="create">
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 gap-2">
+                  <Plus className="h-5 w-5" />
+                  Add Role
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
               {/* Header Section */}
               <div className="relative overflow-hidden flex-shrink-0">
@@ -471,6 +468,7 @@ export default function RolesPage() {
               </div>
             </DialogContent>
           </Dialog>
+          </ProtectedAction>
         </div>
 
         {/* Enhanced Search and Filter Controls */}
@@ -555,9 +553,15 @@ export default function RolesPage() {
                                   <div className="font-bold text-gray-900 dark:text-white text-lg group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">
                                     {role.name}
                                   </div>
-                                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2" title={role.description}>
+                                  <div
+                                    className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2"
+                                    title={role.description}
+                                  >
                                     {role.description.length > 60
-                                      ? `${role.description.substring(0, 60)}...`
+                                      ? `${role.description.substring(
+                                          0,
+                                          60
+                                        )}...`
                                       : role.description}
                                   </div>
                                 </div>
@@ -568,19 +572,28 @@ export default function RolesPage() {
                             <TableCell className="py-4">
                               <div className="space-y-3">
                                 <div>
-                                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Permissions ({role.permissions.length}):</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                    Permissions ({role.permissions.length}):
+                                  </div>
                                   <div className="flex flex-wrap gap-1">
-                                    {role.permissions.slice(0, 2).map((permission) => (
-                                      <Badge
-                                        key={permission}
-                                        className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 text-xs hover:scale-105 transition-transform duration-300"
-                                      >
-                                        {permission.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                                      </Badge>
-                                    ))}
+                                    {role.permissions
+                                      .slice(0, 2)
+                                      .map((permission) => (
+                                        <Badge
+                                          key={permission}
+                                          className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 text-xs hover:scale-105 transition-transform duration-300"
+                                        >
+                                          {permission
+                                            .replace(/_/g, " ")
+                                            .toLowerCase()
+                                            .replace(/\b\w/g, (l) =>
+                                              l.toUpperCase()
+                                            )}
+                                        </Badge>
+                                      ))}
                                     {role.permissions.length > 2 && (
-                                      <Badge 
-                                        variant="outline" 
+                                      <Badge
+                                        variant="outline"
                                         className="text-xs bg-gray-100 dark:bg-gray-800 hover:scale-105 transition-transform duration-300"
                                       >
                                         +{role.permissions.length - 2} more
@@ -615,7 +628,9 @@ export default function RolesPage() {
                                   </span>
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {role.userCount > 0 ? 'Active role' : 'Unused role'}
+                                  {role.userCount > 0
+                                    ? "Active role"
+                                    : "Unused role"}
                                 </div>
                               </div>
                             </TableCell>
@@ -626,7 +641,9 @@ export default function RolesPage() {
                                 <Calendar className="h-4 w-4 text-blue-500" />
                                 <div>
                                   <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {new Date(role.createdAt).toLocaleDateString("en-US", {
+                                    {new Date(
+                                      role.createdAt
+                                    ).toLocaleDateString("en-US", {
                                       month: "short",
                                       day: "numeric",
                                       year: "numeric",
@@ -653,41 +670,46 @@ export default function RolesPage() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEditDialog(role);
-                                  }}
-                                  className="w-10 h-10 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800 dark:hover:to-indigo-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="w-10 h-10 p-0 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/50 dark:to-pink-900/50 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-pink-100 dark:hover:from-red-800 dark:hover:to-pink-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
+                                <ProtectedAction resource="roles" action="update">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openEditDialog(role);
+                                    }}
+                                    className="w-10 h-10 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800 dark:hover:to-indigo-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                </ProtectedAction>
+                                <ProtectedAction resource="roles" action="delete">
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-10 h-10 p-0 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/50 dark:to-pink-900/50 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-pink-100 dark:hover:from-red-800 dark:hover:to-pink-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
                                   <AlertDialogContent className="rounded-2xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20">
                                     <AlertDialogHeader>
                                       <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
                                         🗑️ Delete Role
                                       </AlertDialogTitle>
                                       <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base">
-                                        Are you sure you want to permanently delete the role{" "}
+                                        Are you sure you want to permanently
+                                        delete the role{" "}
                                         <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded">
                                           "{role.name}"
                                         </span>
                                         ?<br />
                                         <span className="text-red-600 dark:text-red-400 font-medium">
-                                          ⚠️ This will affect {role.userCount} users and cannot be undone.
+                                          ⚠️ This will affect {role.userCount}{" "}
+                                          users and cannot be undone.
                                         </span>
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>
@@ -705,6 +727,7 @@ export default function RolesPage() {
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
                                 </AlertDialog>
+                                </ProtectedAction>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -740,15 +763,21 @@ export default function RolesPage() {
                                 </div>
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-xl text-white mb-2 truncate" title={role.name}>
+                                <h3
+                                  className="font-bold text-xl text-white mb-2 truncate"
+                                  title={role.name}
+                                >
                                   {role.name}
                                 </h3>
-                                <p className="text-purple-100 text-sm mb-2 line-clamp-2" title={role.description}>
+                                <p
+                                  className="text-purple-100 text-sm mb-2 line-clamp-2"
+                                  title={role.description}
+                                >
                                   {role.description}
                                 </p>
                                 <div className="flex items-center gap-2 text-purple-100">
-                                  <Badge 
-                                    variant="outline" 
+                                  <Badge
+                                    variant="outline"
                                     className="bg-white/20 border-white/30 text-white text-xs hover:bg-white/30 transition-colors duration-300"
                                   >
                                     🔐 {role.permissions.length} permissions
@@ -769,41 +798,47 @@ export default function RolesPage() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditDialog(role);
-                                }}
-                                className="w-10 h-10 p-0 bg-blue-500/20 hover:bg-blue-500/30 border-blue-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-10 h-10 p-0 bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
+                              <ProtectedAction resource="roles" action="update">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditDialog(role);
+                                  }}
+                                  className="w-10 h-10 p-0 bg-blue-500/20 hover:bg-blue-500/30 border-blue-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </ProtectedAction>
+                              <ProtectedAction resource="roles" action="delete">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="w-10 h-10 p-0 bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
                                 <AlertDialogContent className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20 max-w-md">
                                   <AlertDialogHeader>
                                     <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
                                       🗑️ Delete Role
                                     </AlertDialogTitle>
                                     <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
-                                      Are you sure you want to permanently delete{" "}
+                                      Are you sure you want to permanently
+                                      delete{" "}
                                       <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded-lg">
                                         "{role.name}"
                                       </span>
-                                      ?<br /><br />
+                                      ?<br />
+                                      <br />
                                       <span className="text-red-600 dark:text-red-400 font-medium">
-                                        ⚠️ This will affect {role.userCount} users and cannot be undone.
+                                        ⚠️ This will affect {role.userCount}{" "}
+                                        users and cannot be undone.
                                       </span>
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
@@ -821,6 +856,7 @@ export default function RolesPage() {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                              </ProtectedAction>
                             </div>
                           </div>
                         </div>
@@ -833,17 +869,22 @@ export default function RolesPage() {
                               🔐 Permissions ({role.permissions.length})
                             </h4>
                             <div className="flex flex-wrap gap-2">
-                              {role.permissions.slice(0, 4).map((permission) => (
-                                <Badge
-                                  key={permission}
-                                  className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 text-xs hover:scale-105 transition-transform duration-300"
-                                >
-                                  {permission.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
-                                </Badge>
-                              ))}
+                              {role.permissions
+                                .slice(0, 4)
+                                .map((permission) => (
+                                  <Badge
+                                    key={permission}
+                                    className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 text-xs hover:scale-105 transition-transform duration-300"
+                                  >
+                                    {permission
+                                      .replace(/_/g, " ")
+                                      .toLowerCase()
+                                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                  </Badge>
+                                ))}
                               {role.permissions.length > 4 && (
-                                <Badge 
-                                  variant="outline" 
+                                <Badge
+                                  variant="outline"
                                   className="text-xs bg-blue-50 dark:bg-blue-900/30 hover:scale-105 transition-transform duration-300"
                                 >
                                   +{role.permissions.length - 4} more
@@ -865,7 +906,9 @@ export default function RolesPage() {
                                 </span>
                               </div>
                               <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                                {role.userCount > 0 ? 'Active role' : 'Unused role'}
+                                {role.userCount > 0
+                                  ? "Active role"
+                                  : "Unused role"}
                               </div>
                             </div>
 
@@ -894,11 +937,15 @@ export default function RolesPage() {
                               <Calendar className="h-4 w-4 text-indigo-500" />
                               <div>
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                  Created on {new Date(role.createdAt).toLocaleDateString("en-US", {
-                                    month: "long",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })}
+                                  Created on{" "}
+                                  {new Date(role.createdAt).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "long",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    }
+                                  )}
                                 </div>
                                 <div className="text-xs text-indigo-600 dark:text-indigo-400">
                                   System role configuration

@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
+import { ProtectedFeature, ProtectedAction } from "@/components/ProtectedFeature";
+import { useResourcePermissions, useHasPermission } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/types/permissions";
 import {
   Table,
   TableBody,
@@ -77,6 +81,8 @@ interface Pagination {
   hasPrev: boolean;
 }
 
+import { PermissionDebug } from "@/components/PermissionDebug";
+
 export default function BooksPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -136,20 +142,9 @@ export default function BooksPage() {
   const fetchCategories = async () => {
     try {
       setIsLoadingCategories(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        "http://localhost:8000/api/books/categories",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        setAvailableCategories(result.data || []);
-      }
+      const response = await apiGet("/books/categories");
+      const result = await response.json();
+      setAvailableCategories(result.data || []);
     } catch (error) {
       console.error("Error fetching categories:", error);
       // Fallback to default categories
@@ -167,7 +162,6 @@ export default function BooksPage() {
   ) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -176,17 +170,7 @@ export default function BooksPage() {
         ...(category !== "all" && { category }),
       });
 
-      const response = await fetch(
-        `http://localhost:8000/api/books?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch books");
-
+      const response = await apiGet(`/books?${params}`);
       const result = await response.json();
       setBooks(result.data || []);
       setPagination(result.pagination);
@@ -201,18 +185,7 @@ export default function BooksPage() {
   // Create book
   const createBook = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/books", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error("Failed to create book");
-
+      const response = await apiPost("/api/books", formData);
       const result = await response.json();
       toast.success(result.message || "Book created successfully");
       setIsCreateOpen(false);
@@ -229,21 +202,7 @@ export default function BooksPage() {
     if (!editingBook) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8000/api/books/${editingBook.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update book");
-
+      const response = await apiPut(`/api/books/${editingBook.id}`, formData);
       const result = await response.json();
       toast.success(result.message || "Book updated successfully");
       setIsEditOpen(false);
@@ -259,19 +218,7 @@ export default function BooksPage() {
   // Delete book
   const deleteBook = async (bookId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8000/api/books/${bookId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to delete book");
-
+      const response = await apiDelete(`/api/books/${bookId}`);
       const result = await response.json();
       toast.success(result.message || "Book deleted successfully");
       // If we're on the last page and it becomes empty, go to previous page
@@ -476,6 +423,9 @@ export default function BooksPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 p-6">
+      {/* Debug Component - Remove this later */}
+      <PermissionDebug />
+      
       {/* Animated Header */}
       <div className="flex flex-col gap-4 mb-8">
         <div className="space-y-2">
@@ -487,18 +437,461 @@ export default function BooksPage() {
           </p>
         </div>
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => resetForm()}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-bounce-in"
-            >
-              <Plus className="mr-2 h-5 w-5" />
-              Add New Book
-            </Button>
-          </DialogTrigger>
+        <ProtectedAction resource="books" action="create">
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button
+                onClick={() => resetForm()}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-bounce-in"
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                Add New Book
+              </Button>
+            </DialogTrigger>
 
-          {/* Enhanced Search and Filter Controls */}
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
+              {/* Header Section */}
+              <div className="relative overflow-hidden flex-shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
+                <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                  <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+                    <BookOpen className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-purple-700 dark:from-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
+                      ✨ Add New Book
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                      📚 Expand your library collection with a new book
+                    </DialogDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      Ready
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="px-6 pt-4 flex-shrink-0">
+                <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Form Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                <form
+                  id="create-book-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    createBook();
+                  }}
+                >
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Left Column - Basic Info */}
+                    <div className="space-y-6">
+                      <div className="bg-white/70 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          📝 Basic Information
+                        </h3>
+                        <div className="space-y-5">
+                          <div className="group">
+                            <Label
+                              htmlFor="title"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              📖 Book Title *
+                            </Label>
+                            <Input
+                              id="title"
+                              value={formData.title}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  title: e.target.value,
+                                }))
+                              }
+                              placeholder="Enter the book title..."
+                              className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                              required
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                              The main title of the book
+                            </p>
+                          </div>
+
+                          <div className="group">
+                            <Label
+                              htmlFor="author"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              ✍️ Author *
+                            </Label>
+                            <Input
+                              id="author"
+                              value={formData.author}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  author: e.target.value,
+                                }))
+                              }
+                              placeholder="Enter author name..."
+                              className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                              required
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                              Who wrote this book?
+                            </p>
+                          </div>
+
+                          <div className="group">
+                            <Label
+                              htmlFor="isbn"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              🔢 ISBN *
+                            </Label>
+                            <Input
+                              id="isbn"
+                              value={formData.isbn}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  isbn: e.target.value,
+                                }))
+                              }
+                              placeholder="Enter ISBN number..."
+                              className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                              required
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                              International Standard Book Number
+                            </p>
+                          </div>
+
+                          <div className="group">
+                            <Label
+                              htmlFor="description"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              📝 Description
+                            </Label>
+                            <Textarea
+                              id="description"
+                              value={formData.description}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  description: e.target.value,
+                                }))
+                              }
+                              placeholder="Enter book description or summary..."
+                              className="bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                              rows={4}
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                              A short summary or synopsis
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column - Advanced Info */}
+                    <div className="space-y-6">
+                      {/* Book Cover Section */}
+                      <div className="bg-white/70 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          🖼️ Book Cover
+                        </h3>
+                        <div className="space-y-4">
+                          <div className="group">
+                            <Label
+                              htmlFor="thumbnail"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              📷 Cover Image URL
+                            </Label>
+                            <Input
+                              id="thumbnail"
+                              value={formData.thumbnail}
+                              onChange={(e) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  thumbnail: e.target.value,
+                                }))
+                              }
+                              placeholder="Paste image URL here..."
+                              className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                              Direct link to the book cover image
+                            </p>
+                          </div>
+                          {formData.thumbnail && (
+                            <div className="flex justify-center">
+                              <div className="relative group">
+                                <img
+                                  src={formData.thumbnail}
+                                  alt="Book cover preview"
+                                  className="w-24 h-32 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-lg group-hover:scale-105 transition-transform"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-colors"></div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Classification Section */}
+                      <div className="bg-white/70 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                          🏷️ Classification
+                        </h3>
+                        <div className="space-y-5">
+                          <div className="group">
+                            <Label
+                              htmlFor="category"
+                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                            >
+                              📂 Category *
+                            </Label>
+                            <Select
+                              value={formData.category}
+                              onValueChange={(value) =>
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  category: value,
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 transition-all duration-300">
+                                <SelectValue placeholder="Choose a category..." />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm max-h-60">
+                                <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                                  <Input
+                                    placeholder="🔍 Search categories..."
+                                    value={categorySearchTerm}
+                                    onChange={(e) =>
+                                      handleCategorySearch(e.target.value)
+                                    }
+                                    className="h-8 text-sm bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded-lg"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                                {visibleCategories.length > 0 &&
+                                  visibleCategories.map((category) => (
+                                    <SelectItem
+                                      key={category}
+                                      value={category}
+                                      className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
+                                    >
+                                      📖 {category}
+                                    </SelectItem>
+                                  ))}
+                                {visibleCategories.length === 0 &&
+                                  categorySearchTerm && (
+                                    <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                                      No categories found. You can still type a
+                                      custom category.
+                                    </div>
+                                  )}
+                                {hasMoreCategories && (
+                                  <div className="p-2 border-t border-gray-200 dark:border-gray-600">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="w-full text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        loadMoreCategories();
+                                      }}
+                                    >
+                                      📂 Load More (
+                                      {filteredCategories.length -
+                                        visibleCategoryCount}{" "}
+                                      remaining)
+                                    </Button>
+                                  </div>
+                                )}
+                                {!categorySearchTerm &&
+                                  categories.map((category) => (
+                                    <SelectItem
+                                      key={category}
+                                      value={category}
+                                      className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
+                                    >
+                                      📖 {category}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                              Choose or search a category
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="group">
+                              <Label
+                                htmlFor="publishedYear"
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                              >
+                                📅 Year *
+                              </Label>
+                              <Input
+                                id="publishedYear"
+                                type="number"
+                                value={formData.publishedYear}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    publishedYear: parseInt(e.target.value),
+                                  }))
+                                }
+                                placeholder="2024"
+                                className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                                required
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                Publication year
+                              </p>
+                            </div>
+                            <div className="group">
+                              <Label
+                                htmlFor="status"
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                              >
+                                📊 Status *
+                              </Label>
+                              <Select
+                                value={formData.status}
+                                onValueChange={(value) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    status: value,
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 transition-all duration-300">
+                                  <SelectValue placeholder="Status..." />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                  <SelectItem value="available">
+                                    ✅ Available
+                                  </SelectItem>
+                                  <SelectItem value="checked_out">
+                                    📤 Checked Out
+                                  </SelectItem>
+                                  <SelectItem value="reserved">
+                                    🔒 Reserved
+                                  </SelectItem>
+                                  <SelectItem value="maintenance">
+                                    🔧 Maintenance
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                Current status
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="group">
+                              <Label
+                                htmlFor="totalCopies"
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                              >
+                                📚 Total Copies *
+                              </Label>
+                              <Input
+                                id="totalCopies"
+                                type="number"
+                                min="1"
+                                value={formData.totalCopies}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    totalCopies: parseInt(e.target.value),
+                                  }))
+                                }
+                                placeholder="1"
+                                className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                                required
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                Total quantity
+                              </p>
+                            </div>
+                            <div className="group">
+                              <Label
+                                htmlFor="availableCopies"
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+                              >
+                                📖 Available *
+                              </Label>
+                              <Input
+                                id="availableCopies"
+                                type="number"
+                                min="0"
+                                max={formData.totalCopies}
+                                value={formData.availableCopies}
+                                onChange={(e) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    availableCopies: parseInt(e.target.value),
+                                  }))
+                                }
+                                placeholder="1"
+                                className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                                required
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                Available now
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* Fixed Footer with Action Buttons */}
+              <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                    className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
+                  >
+                    ❌ Cancel
+                  </Button>
+                  <Button
+                    form="create-book-form"
+                    type="submit"
+                    className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[140px]"
+                  >
+                    <Plus className="mr-2 h-5 w-5" />✨ Add Book
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </ProtectedAction>
+
+        {/* Enhanced Search and Filter Controls */}
           <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-slide-up">
             <CardContent className="p-6">
               <form onSubmit={handleSearch} className="space-y-6">
@@ -682,446 +1075,6 @@ export default function BooksPage() {
               )}
             </CardContent>
           </Card>
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
-            {/* Header Section */}
-            <div className="relative overflow-hidden flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
-              <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-                <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
-                  <BookOpen className="h-8 w-8 text-white" />
-                </div>
-                <div className="flex-1">
-                  <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-purple-700 dark:from-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
-                    ✨ Add New Book
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
-                    📚 Expand your library collection with a new book
-                  </DialogDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    Ready
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="px-6 pt-4 flex-shrink-0">
-              <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse"></div>
-              </div>
-            </div>
-
-            {/* Form Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <form
-                id="create-book-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  createBook();
-                }}
-              >
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Left Column - Basic Info */}
-                  <div className="space-y-6">
-                    <div className="bg-white/70 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        📝 Basic Information
-                      </h3>
-                      <div className="space-y-5">
-                        <div className="group">
-                          <Label
-                            htmlFor="title"
-                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                          >
-                            📖 Book Title *
-                          </Label>
-                          <Input
-                            id="title"
-                            value={formData.title}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                title: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter the book title..."
-                            className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                            required
-                          />
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            The main title of the book
-                          </p>
-                        </div>
-
-                        <div className="group">
-                          <Label
-                            htmlFor="author"
-                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                          >
-                            ✍️ Author *
-                          </Label>
-                          <Input
-                            id="author"
-                            value={formData.author}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                author: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter author name..."
-                            className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                            required
-                          />
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Who wrote this book?
-                          </p>
-                        </div>
-
-                        <div className="group">
-                          <Label
-                            htmlFor="isbn"
-                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                          >
-                            🔢 ISBN *
-                          </Label>
-                          <Input
-                            id="isbn"
-                            value={formData.isbn}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                isbn: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter ISBN number..."
-                            className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                            required
-                          />
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            International Standard Book Number
-                          </p>
-                        </div>
-
-                        <div className="group">
-                          <Label
-                            htmlFor="description"
-                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                          >
-                            📝 Description
-                          </Label>
-                          <Textarea
-                            id="description"
-                            value={formData.description}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                description: e.target.value,
-                              }))
-                            }
-                            placeholder="Enter book description or summary..."
-                            className="bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                            rows={4}
-                          />
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            A short summary or synopsis
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column - Advanced Info */}
-                  <div className="space-y-6">
-                    {/* Book Cover Section */}
-                    <div className="bg-white/70 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        🖼️ Book Cover
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="group">
-                          <Label
-                            htmlFor="thumbnail"
-                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                          >
-                            📷 Cover Image URL
-                          </Label>
-                          <Input
-                            id="thumbnail"
-                            value={formData.thumbnail}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                thumbnail: e.target.value,
-                              }))
-                            }
-                            placeholder="Paste image URL here..."
-                            className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                          />
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Direct link to the book cover image
-                          </p>
-                        </div>
-                        {formData.thumbnail && (
-                          <div className="flex justify-center">
-                            <div className="relative group">
-                              <img
-                                src={formData.thumbnail}
-                                alt="Book cover preview"
-                                className="w-24 h-32 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-lg group-hover:scale-105 transition-transform"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-xl transition-colors"></div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Classification Section */}
-                    <div className="bg-white/70 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        🏷️ Classification
-                      </h3>
-                      <div className="space-y-5">
-                        <div className="group">
-                          <Label
-                            htmlFor="category"
-                            className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                          >
-                            📂 Category *
-                          </Label>
-                          <Select
-                            value={formData.category}
-                            onValueChange={(value) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                category: value,
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 transition-all duration-300">
-                              <SelectValue placeholder="Choose a category..." />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm max-h-60">
-                              <div className="p-2 border-b border-gray-200 dark:border-gray-600">
-                                <Input
-                                  placeholder="🔍 Search categories..."
-                                  value={categorySearchTerm}
-                                  onChange={(e) =>
-                                    handleCategorySearch(e.target.value)
-                                  }
-                                  className="h-8 text-sm bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded-lg"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                              {visibleCategories.length > 0 &&
-                                visibleCategories.map((category) => (
-                                  <SelectItem
-                                    key={category}
-                                    value={category}
-                                    className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
-                                  >
-                                    📖 {category}
-                                  </SelectItem>
-                                ))}
-                              {visibleCategories.length === 0 &&
-                                categorySearchTerm && (
-                                  <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    No categories found. You can still type a
-                                    custom category.
-                                  </div>
-                                )}
-                              {hasMoreCategories && (
-                                <div className="p-2 border-t border-gray-200 dark:border-gray-600">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      loadMoreCategories();
-                                    }}
-                                  >
-                                    📂 Load More (
-                                    {filteredCategories.length -
-                                      visibleCategoryCount}{" "}
-                                    remaining)
-                                  </Button>
-                                </div>
-                              )}
-                              {!categorySearchTerm &&
-                                categories.map((category) => (
-                                  <SelectItem
-                                    key={category}
-                                    value={category}
-                                    className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
-                                  >
-                                    📖 {category}
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                            Choose or search a category
-                          </p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="group">
-                            <Label
-                              htmlFor="publishedYear"
-                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                            >
-                              📅 Year *
-                            </Label>
-                            <Input
-                              id="publishedYear"
-                              type="number"
-                              value={formData.publishedYear}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  publishedYear: parseInt(e.target.value),
-                                }))
-                              }
-                              placeholder="2024"
-                              className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                              required
-                            />
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                              Publication year
-                            </p>
-                          </div>
-                          <div className="group">
-                            <Label
-                              htmlFor="status"
-                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                            >
-                              📊 Status *
-                            </Label>
-                            <Select
-                              value={formData.status}
-                              onValueChange={(value) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  status: value,
-                                }))
-                              }
-                            >
-                              <SelectTrigger className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 transition-all duration-300">
-                                <SelectValue placeholder="Status..." />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-xl">
-                                <SelectItem value="available">
-                                  ✅ Available
-                                </SelectItem>
-                                <SelectItem value="checked_out">
-                                  📤 Checked Out
-                                </SelectItem>
-                                <SelectItem value="reserved">
-                                  🔒 Reserved
-                                </SelectItem>
-                                <SelectItem value="maintenance">
-                                  🔧 Maintenance
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                              Current status
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="group">
-                            <Label
-                              htmlFor="totalCopies"
-                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                            >
-                              📚 Total Copies *
-                            </Label>
-                            <Input
-                              id="totalCopies"
-                              type="number"
-                              min="1"
-                              value={formData.totalCopies}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  totalCopies: parseInt(e.target.value),
-                                }))
-                              }
-                              placeholder="1"
-                              className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                              required
-                            />
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                              Total quantity
-                            </p>
-                          </div>
-                          <div className="group">
-                            <Label
-                              htmlFor="availableCopies"
-                              className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
-                            >
-                              📖 Available *
-                            </Label>
-                            <Input
-                              id="availableCopies"
-                              type="number"
-                              min="0"
-                              max={formData.totalCopies}
-                              value={formData.availableCopies}
-                              onChange={(e) =>
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  availableCopies: parseInt(e.target.value),
-                                }))
-                              }
-                              placeholder="1"
-                              className="h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                              required
-                            />
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                              Available now
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </form>
-            </div>
-
-            {/* Fixed Footer with Action Buttons */}
-            <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                  className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
-                >
-                  ❌ Cancel
-                </Button>
-                <Button
-                  form="create-book-form"
-                  type="submit"
-                  className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[140px]"
-                >
-                  <Plus className="mr-2 h-5 w-5" />✨ Add Book
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Enhanced Books Display */}
         <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-2xl rounded-2xl overflow-hidden animate-fade-in">
@@ -1286,28 +1239,31 @@ export default function BooksPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(book);
-                              }}
-                              className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/50 dark:hover:bg-blue-800 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:scale-110 transition-all duration-300"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="bg-red-50 hover:bg-red-100 dark:bg-red-900/50 dark:hover:bg-red-800 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:scale-110 transition-all duration-300"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
+                            <ProtectedAction resource="books" action="update">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(book);
+                                }}
+                                className="bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/50 dark:hover:bg-blue-800 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:scale-110 transition-all duration-300"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </ProtectedAction>
+                            <ProtectedAction resource="books" action="delete">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="bg-red-50 hover:bg-red-100 dark:bg-red-900/50 dark:hover:bg-red-800 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:scale-110 transition-all duration-300"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
                               <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
                                 <AlertDialogHeader>
                                   <AlertDialogTitle className="text-xl font-bold text-red-600">
@@ -1334,6 +1290,7 @@ export default function BooksPage() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                            </ProtectedAction>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1398,26 +1355,29 @@ export default function BooksPage() {
                         </div>
 
                         <div className="flex gap-2 flex-shrink-0">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(book);
-                            }}
-                            className="bg-white/20 hover:bg-white/30 border-white/30 text-white hover:scale-110 transition-all duration-300 rounded-xl"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => e.stopPropagation()}
-                                className="bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl"
-                              >
-                                <Trash2 className="h-4 w-4" />
+                          <ProtectedAction resource="books" action="update">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(book);
+                              }}
+                              className="bg-white/20 hover:bg-white/30 border-white/30 text-white hover:scale-110 transition-all duration-300 rounded-xl"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </ProtectedAction>
+                          <ProtectedAction resource="books" action="delete">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
@@ -1446,6 +1406,7 @@ export default function BooksPage() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+                          </ProtectedAction>
                         </div>
                       </div>
                     </div>
@@ -2313,16 +2274,18 @@ export default function BooksPage() {
                 Close
               </Button>
               {viewingBook && (
-                <Button
-                  onClick={() => {
-                    setIsDetailOpen(false);
-                    handleEdit(viewingBook);
-                  }}
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Book
-                </Button>
+                <ProtectedAction resource="books" action="update">
+                  <Button
+                    onClick={() => {
+                      setIsDetailOpen(false);
+                      handleEdit(viewingBook);
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Book
+                  </Button>
+                </ProtectedAction>
               )}
             </DialogFooter>
           </DialogContent>

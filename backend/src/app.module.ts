@@ -8,6 +8,9 @@ import { UsersModule } from './users/users.module';
 import { UserRoleModule } from './user-role/user-role.module';
 import { BooksModule } from './books/books.module';
 import { RolesModule } from './roles/roles.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { TestModule } from './test/test.module';
+import { AdminModule } from './admin/admin.module';
 import { JwtMiddleware } from './auth/jwt.middleware';
 import { JwtModule } from '@nestjs/jwt';
 @Module({
@@ -19,6 +22,9 @@ import { JwtModule } from '@nestjs/jwt';
     UserRoleModule,
     BooksModule,
     RolesModule,
+    PermissionsModule,
+    TestModule,
+    AdminModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { apiGet } from "@/lib/api";
 
 interface Book {
   id: string;
@@ -28,27 +29,29 @@ const BooksWithPagination: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [categories, setCategories] = useState<string[]>([]);
 
-  const fetchBooks = async (
-    page: number = 1,
-    search: string = "",
-    category: string = "all"
-  ) => {
+  const fetchBooks = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        page: page.toString(),
+        page: currentPage.toString(),
         limit: "10",
-        ...(search && { search }),
-        ...(category !== "all" && { category }),
+        ...(searchTerm && { search: searchTerm }),
+        ...(selectedCategory !== "all" && { category: selectedCategory }),
       });
 
-      const response = await fetch(`/api/books?${params}`);
+      const response = await apiGet(`/books?${params}`);
       const data = await response.json();
 
-      setBooks(data.data);
-      setPagination(data.pagination);
+      if (response.ok) {
+        setBooks(data.data);
+        setPagination(data.pagination);
+      } else {
+        console.error("Error fetching books:", data.message);
+        setBooks([]);
+      }
     } catch (error) {
       console.error("Error fetching books:", error);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -56,9 +59,14 @@ const BooksWithPagination: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/books/categories");
+      const response = await apiGet("/books/categories");
       const data = await response.json();
-      setCategories(data.data);
+      
+      if (response.ok) {
+        setCategories(data.data);
+      } else {
+        console.error("Error fetching categories:", data.message);
+      }
     } catch (error) {
       console.error("Error fetching categories:", error);
     }
@@ -69,13 +77,12 @@ const BooksWithPagination: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchBooks(currentPage, searchTerm, selectedCategory);
+    fetchBooks();
   }, [currentPage, searchTerm, selectedCategory]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    fetchBooks(1, searchTerm, selectedCategory);
   };
 
   const handlePageChange = (newPage: number) => {

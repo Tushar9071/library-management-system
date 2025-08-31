@@ -11,25 +11,24 @@ import {
   BarChart3,
   Clock,
   Star,
-  FileText,
-  Database,
-  Shield,
-  Bell,
-  HelpCircle,
   LogOut,
   User,
 } from "lucide-react";
+import { useHasPermission } from "@/hooks/usePermissions";
+import { PERMISSIONS } from "@/types/permissions";
 
 // Define types for navigation items
 type NavigationSubItem = {
   title: string;
   url: string;
+  permission?: string;
 };
 
 type NavigationItem = {
   title: string;
   url: string;
   icon: React.ComponentType<any>;
+  permission?: string;
   items?: NavigationSubItem[];
 };
 
@@ -76,8 +75,17 @@ const mockUser = {
 export function AppSidebar() {
   const [user] = useState(mockUser);
 
+  // Use permission hooks to check access
+  const hasReadBooks = useHasPermission(PERMISSIONS.READ_BOOKS);
+  const hasCreateBooks = useHasPermission(PERMISSIONS.CREATE_BOOKS);
+  const hasReadUsers = useHasPermission(PERMISSIONS.READ_USERS);
+  const hasCreateUsers = useHasPermission(PERMISSIONS.CREATE_USERS);
+  const hasReadRoles = useHasPermission(PERMISSIONS.READ_ROLES);
+  const hasBorrowBooks = useHasPermission(PERMISSIONS.BORROW_BOOKS);
+  const hasManagePermissions = useHasPermission(PERMISSIONS.MANAGE_PERMISSIONS);
+
   const getNavigationItems = (): NavigationItem[] => {
-    const commonItems: NavigationItem[] = [
+    const allItems: NavigationItem[] = [
       {
         title: "Dashboard",
         url: "/dashboard",
@@ -90,168 +98,84 @@ export function AppSidebar() {
       },
     ];
 
-    switch (user.role) {
-      case "admin":
-        return [
-          ...commonItems,
-          {
-            title: "User Management",
-            url: "/dashboard/users",
-            icon: Users,
-            items: [
-              { title: "All Users", url: "/dashboard/users" },
-              { title: "Add User", url: "/dashboard/users/add" },
-              { title: "User Roles", url: "/dashboard/roles" },
-            ],
-          },
-          {
-            title: "Book Management",
-            url: "/dashboard/books",
-            icon: BookOpen,
-            items: [
-              { title: "All Books", url: "/dashboard/books" },
-              { title: "Add Book", url: "/dashboard/books/add" },
-              { title: "Categories", url: "/dashboard/books/categories" },
-              { title: "Publishers", url: "/dashboard/books/publishers" },
-            ],
-          },
-          {
-            title: "Transactions",
-            url: "/dashboard/transactions",
-            icon: FileText,
-            items: [
-              { title: "Borrowing", url: "/dashboard/transactions/borrowing" },
-              { title: "Returns", url: "/dashboard/transactions/returns" },
-              {
-                title: "Reservations",
-                url: "/dashboard/transactions/reservations",
-              },
-              { title: "Overdue", url: "/dashboard/transactions/overdue" },
-            ],
-          },
-          {
-            title: "Analytics",
-            url: "/dashboard/analytics",
-            icon: BarChart3,
-          },
-          {
-            title: "System Settings",
-            url: "/dashboard/settings",
-            icon: Settings,
-            items: [
-              { title: "General", url: "/dashboard/settings/general" },
-              {
-                title: "Library Policies",
-                url: "/dashboard/settings/policies",
-              },
-              {
-                title: "Notifications",
-                url: "/dashboard/settings/notifications",
-              },
-              { title: "Backup", url: "/dashboard/settings/backup" },
-            ],
-          },
-        ];
+    // Add User Management if user has permissions
+    if (hasReadUsers) {
+      const userSubItems: NavigationSubItem[] = [];
+      if (hasReadUsers) userSubItems.push({ title: "All Users", url: "/dashboard/users" });
+      if (hasCreateUsers) userSubItems.push({ title: "Add User", url: "/dashboard/users/add" });
+      if (hasReadRoles) userSubItems.push({ title: "User Roles", url: "/dashboard/roles" });
 
-      case "faculty":
-        return [
-          ...commonItems,
-          {
-            title: "My Books",
-            url: "/dashboard/my-books",
-            icon: BookOpen,
-          },
-          {
-            title: "Course Reserves",
-            url: "/dashboard/course-reserves",
-            icon: Calendar,
-            items: [
-              { title: "Current Courses", url: "/dashboard/course-reserves" },
-              { title: "Add Reserve", url: "/dashboard/course-reserves/add" },
-              {
-                title: "Reserve History",
-                url: "/dashboard/course-reserves/history",
-              },
-            ],
-          },
-          {
-            title: "Research",
-            url: "/dashboard/research",
-            icon: Database,
-            items: [
-              { title: "Saved Papers", url: "/dashboard/research/papers" },
-              {
-                title: "Research Databases",
-                url: "/dashboard/research/databases",
-              },
-              { title: "Citation Tools", url: "/dashboard/research/citations" },
-            ],
-          },
-          {
-            title: "Reservations",
-            url: "/dashboard/reservations",
-            icon: Calendar,
-          },
-          {
-            title: "History",
-            url: "/dashboard/history",
-            icon: Clock,
-          },
-          {
-            title: "Favorites",
-            url: "/dashboard/favorites",
-            icon: Star,
-          },
-        ];
-
-      case "student":
-        return [
-          ...commonItems,
-          {
-            title: "My Books",
-            url: "/dashboard/my-books",
-            icon: BookOpen,
-          },
-          {
-            title: "Reservations",
-            url: "/dashboard/reservations",
-            icon: Calendar,
-          },
-          {
-            title: "History",
-            url: "/dashboard/history",
-            icon: Clock,
-          },
-          {
-            title: "Favorites",
-            url: "/dashboard/favorites",
-            icon: Star,
-          },
-        ];
-
-      case "public":
-        return [
-          {
-            title: "Browse Catalog",
-            url: "/dashboard/search",
-            icon: Search,
-          },
-          {
-            title: "Library Info",
-            url: "/dashboard/info",
-            icon: HelpCircle,
-            items: [
-              { title: "Hours & Location", url: "/dashboard/info/hours" },
-              { title: "Services", url: "/dashboard/info/services" },
-              { title: "Policies", url: "/dashboard/info/policies" },
-              { title: "Contact", url: "/dashboard/info/contact" },
-            ],
-          },
-        ];
-
-      default:
-        return commonItems;
+      allItems.push({
+        title: "User Management",
+        url: "/dashboard/users",
+        icon: Users,
+        items: userSubItems,
+      });
     }
+
+    // Add Book Management if user has permissions
+    if (hasReadBooks) {
+      const bookSubItems: NavigationSubItem[] = [];
+      if (hasReadBooks) bookSubItems.push({ title: "All Books", url: "/dashboard/books" });
+      if (hasCreateBooks) bookSubItems.push({ title: "Add Book", url: "/dashboard/books/add" });
+      if (hasReadBooks) bookSubItems.push({ title: "Categories", url: "/dashboard/books/categories" });
+
+      allItems.push({
+        title: "Book Management",
+        url: "/dashboard/books",
+        icon: BookOpen,
+        items: bookSubItems,
+      });
+    }
+
+    // Add borrowing features for students/faculty
+    if (hasBorrowBooks) {
+      allItems.push(
+        {
+          title: "My Books",
+          url: "/dashboard/my-books",
+          icon: BookOpen,
+        },
+        {
+          title: "Reservations",
+          url: "/dashboard/reservations",
+          icon: Calendar,
+        },
+        {
+          title: "History",
+          url: "/dashboard/history",
+          icon: Clock,
+        }
+      );
+    }
+
+    // Add read-only features
+    if (hasReadBooks) {
+      allItems.push({
+        title: "Favorites",
+        url: "/dashboard/favorites",
+        icon: Star,
+      });
+    }
+
+    // Add admin features
+    if (hasReadUsers) {
+      allItems.push({
+        title: "Analytics",
+        url: "/dashboard/analytics",
+        icon: BarChart3,
+      });
+    }
+
+    if (hasManagePermissions) {
+      allItems.push({
+        title: "System Settings",
+        url: "/dashboard/settings",
+        icon: Settings,
+      });
+    }
+
+    return allItems;
   };
 
   const navigationItems = getNavigationItems();
@@ -289,16 +213,16 @@ export function AppSidebar() {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {hasSubItems(item) ? (
-                    <Collapsible className="group/collapsible">
+                    <Collapsible>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton>
-                          <item.icon />
+                          <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {item.items.map((subItem: NavigationSubItem) => (
+                          {item.items.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild>
                                 <Link href={subItem.url}>
@@ -313,7 +237,7 @@ export function AppSidebar() {
                   ) : (
                     <SidebarMenuButton asChild>
                       <Link href={item.url}>
-                        <item.icon />
+                        <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -324,47 +248,41 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {user.role !== "public" && (
-          <>
-            <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupLabel>Account</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/dashboard/profile">
-                        <User />
-                        <span>Profile</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <Link href="/dashboard/notifications">
-                        <Bell />
-                        <span>Notifications</span>
-                        <Badge variant="destructive" className="ml-auto">
-                          3
-                        </Badge>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  {user.role === "admin" && (
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <Link href="/dashboard/admin">
-                          <Shield />
-                          <span>Admin Panel</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </>
-        )}
+        <SidebarSeparator />
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {hasCreateBooks && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/dashboard/books/add">
+                      <BookOpen className="h-4 w-4" />
+                      <span>Add Book</span>
+                      <Badge variant="secondary" className="ml-auto">
+                        Quick
+                      </Badge>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+              {hasCreateUsers && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link href="/dashboard/users/add">
+                      <Users className="h-4 w-4" />
+                      <span>Add User</span>
+                      <Badge variant="secondary" className="ml-auto">
+                        Quick
+                      </Badge>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>
@@ -372,47 +290,36 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage
-                      src={user.avatar || "/placeholder.svg"}
-                      alt={user.name}
-                    />
-                    <AvatarFallback className="rounded-lg">
+                <SidebarMenuButton className="w-full">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback>
                       {user.name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user.name}</span>
-                    <span className="truncate text-xs capitalize">
+                  <div className="flex flex-col items-start text-left">
+                    <span className="text-sm font-medium">{user.name}</span>
+                    <span className="text-xs text-muted-foreground capitalize">
                       {user.role}
                     </span>
                   </div>
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Account</span>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <HelpCircle className="mr-2 h-4 w-4" />
-                  <span>Help</span>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <LogOut className="mr-2 h-4 w-4" />

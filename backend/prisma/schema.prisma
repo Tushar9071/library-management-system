@@ -57,15 +57,44 @@ model userInfo {
 }
 
 model userRole {
-  id         Int      @id @default(autoincrement())
-  role       String   @unique
-  visibility Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          Int               @id @default(autoincrement())
+  role        String            @unique
+  visibility  Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
-  userinfo userInfo[]
+  userinfo    userInfo[]
+  permissions RolePermission[]
 
   @@map("userrole")
+}
+
+model Permission {
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
+  description String?
+  category    String            // e.g., "books", "users", "roles"
+  action      String            // e.g., "read", "create", "update", "delete"
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  role       userRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
 }
 
 model session {

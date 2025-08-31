@@ -86,6 +86,7 @@ export class AuthService {
       });
       return {
         access_token: token,
+        id: user.id,
         name: user.userInfoId?.firstname || '',
         email: user.email,
         role: user.userInfoId?.role?.role || 'public user',
@@ -145,6 +146,7 @@ export class AuthService {
 
     return {
       access_token: token,
+      id: newUser.id,
       name: newUser.userInfoId?.firstname || '',
       email: newUser.email,
       role: newUser.userInfoId?.role?.role || 'public user',
@@ -172,6 +174,7 @@ export class AuthService {
       });
       return {
         access_token: token,
+        id: user.id,
         name: user.userInfoId?.firstname || '',
         email: user.email,
         role: user.userInfoId?.role?.role || 'public user',
@@ -231,6 +234,7 @@ export class AuthService {
 
     return {
       access_token: token,
+      id: newUser.id,
       name: newUser.userInfoId?.firstname || '',
       email: newUser.email,
       role: newUser.userInfoId?.role?.role || 'public user',

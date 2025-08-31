@@ -127,29 +127,11 @@ export default function LibraryAuth() {
     const loadingToast = toast.loading("Signing you in...");
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: "include",
-      });
+      // Use the new auth utility
+      const { loginUser } = await import('@/lib/api');
+      const result = await loginUser(email as string, password as string);
 
-      if (response.ok) {
-        let data = await response.json();
-        toast.success(data.message, { id: loadingToast });
-        data = data.data;
-
-        localStorage.setItem(
-          "userData",
-          JSON.stringify({
-            id: data.id,
-            email: data.email,
-            role: data.role,
-            name: data.name,
-          })
-        );
-
-        // Smooth transition with loading state
+      if (result.success) {
         toast.success("Login successful! Redirecting...", { id: loadingToast });
 
         // Add a delay for smooth transition
@@ -157,13 +139,12 @@ export default function LibraryAuth() {
           window.location.href = "/dashboard";
         }, 1500);
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Invalid credentials", {
+        toast.error(result.error || "Invalid credentials", {
           id: loadingToast,
         });
       }
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       toast.error("Network error. Please try again.", { id: loadingToast });
     } finally {
       setIsLoading(false);

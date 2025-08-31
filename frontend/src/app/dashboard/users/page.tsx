@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import {
   Table,
   TableBody,
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProtectedFeature, ProtectedAction } from "@/components/ProtectedFeature";
 import { Plus, Edit, Trash2, Users, Mail, Phone, Calendar } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -102,7 +104,6 @@ export default function UsersPage() {
   ) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -111,16 +112,12 @@ export default function UsersPage() {
         ...(role !== "all" && { role }),
       });
 
-      const response = await fetch(
-        `http://localhost:8000/api/users?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await apiGet(`/users?${params}`);
 
-      if (!response.ok) throw new Error("Failed to fetch users");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch users");
+      }
 
       const result = await response.json();
       setUsers(result.data || []);
@@ -136,14 +133,12 @@ export default function UsersPage() {
   // Fetch roles
   const fetchRoles = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/users/roles", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiGet("/users/roles");
 
-      if (!response.ok) throw new Error("Failed to fetch roles");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch roles");
+      }
 
       const result = await response.json();
       setRoles(result.data || []);
@@ -174,17 +169,12 @@ export default function UsersPage() {
   // Create user
   const createUser = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await apiPost("/users", formData);
 
-      if (!response.ok) throw new Error("Failed to create user");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create user");
+      }
 
       const result = await response.json();
       toast.success(result.message || "User created successfully");
@@ -202,25 +192,17 @@ export default function UsersPage() {
     if (!editingUser) return;
 
     try {
-      const token = localStorage.getItem("token");
       const updateData: any = { ...formData };
       if (!updateData.password) {
         delete updateData.password; // Don't update password if empty
       }
 
-      const response = await fetch(
-        `http://localhost:8000/api/users/${editingUser.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updateData),
-        }
-      );
+      const response = await apiPut(`/users/${editingUser.id}`, updateData);
 
-      if (!response.ok) throw new Error("Failed to update user");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update user");
+      }
 
       const result = await response.json();
       toast.success(result.message || "User updated successfully");
@@ -237,18 +219,12 @@ export default function UsersPage() {
   // Delete user
   const deleteUser = async (userId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8000/api/users/${userId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await apiDelete(`/users/${userId}`);
 
-      if (!response.ok) throw new Error("Failed to delete user");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete user");
+      }
 
       const result = await response.json();
       toast.success(result.message || "User deleted successfully");
@@ -376,16 +352,17 @@ export default function UsersPage() {
           </p>
         </div>
 
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => resetForm()}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-bounce-in"
-            >
-              <Plus className="mr-2 h-5 w-5" />
-              Add New User
-            </Button>
-          </DialogTrigger>
+        <ProtectedAction resource="users" action="create">
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button
+                onClick={() => resetForm()}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-bounce-in"
+              >
+                <Plus className="mr-2 h-5 w-5" />
+                Add New User
+              </Button>
+            </DialogTrigger>
 
           {/* Enhanced Search and Filter Controls */}
           <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-slide-up">
@@ -720,6 +697,7 @@ export default function UsersPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </ProtectedAction>
       </div>
       {/* Enhanced Users Display */}
       <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-2xl rounded-2xl overflow-hidden animate-fade-in">
@@ -872,28 +850,31 @@ export default function UsersPage() {
                       {/* Actions */}
                       <TableCell className="py-4 text-center">
                         <div className="flex items-center justify-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(user);
-                            }}
-                            className="w-10 h-10 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800 dark:hover:to-indigo-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-10 h-10 p-0 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/50 dark:to-pink-900/50 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-pink-100 dark:hover:from-red-800 dark:hover:to-pink-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
+                          <ProtectedAction resource="users" action="update">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(user);
+                              }}
+                              className="w-10 h-10 p-0 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-800 dark:hover:to-indigo-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </ProtectedAction>
+                          <ProtectedAction resource="users" action="delete">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-10 h-10 p-0 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/50 dark:to-pink-900/50 border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 hover:from-red-100 hover:to-pink-100 dark:hover:from-red-800 dark:hover:to-pink-800 hover:scale-110 transition-all duration-300 rounded-xl shadow-sm hover:shadow-md"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
                             <AlertDialogContent className="rounded-2xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20">
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
@@ -925,6 +906,7 @@ export default function UsersPage() {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+                          </ProtectedAction>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -989,28 +971,31 @@ export default function UsersPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 flex-shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(user);
-                          }}
-                          className="w-10 h-10 p-0 bg-white/20 hover:bg-white/30 border-white/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-10 h-10 p-0 bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
+                        <ProtectedAction resource="users" action="update">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(user);
+                            }}
+                            className="w-10 h-10 p-0 bg-white/20 hover:bg-white/30 border-white/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </ProtectedAction>
+                        <ProtectedAction resource="users" action="delete">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-10 h-10 p-0 bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl backdrop-blur-sm"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
                           <AlertDialogContent className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20 max-w-md">
                             <AlertDialogHeader>
                               <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
@@ -1042,6 +1027,7 @@ export default function UsersPage() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
+                        </ProtectedAction>
                       </div>
                     </div>
                   </div>
@@ -1740,16 +1726,18 @@ export default function UsersPage() {
               Close
             </Button>
             {viewingUser && (
-              <Button
-                onClick={() => {
-                  setIsDetailOpen(false);
-                  handleEdit(viewingUser);
-                }}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Edit User
-              </Button>
+              <ProtectedAction resource="users" action="update">
+                <Button
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    handleEdit(viewingUser);
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit User
+                </Button>
+              </ProtectedAction>
             )}
           </DialogFooter>
         </DialogContent>

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -83,15 +84,7 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/users", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch users");
-
+      const response = await apiGet("/api/users");
       const result = await response.json();
       setUsers(result.data || []);
     } catch (error) {
@@ -105,15 +98,7 @@ export default function UsersPage() {
   // Fetch roles
   const fetchRoles = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/roles", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error("Failed to fetch roles");
-
+      const response = await apiGet("/api/roles");
       const result = await response.json();
       setRoles(result.data || []);
     } catch (error) {
@@ -125,18 +110,7 @@ export default function UsersPage() {
   // Create user
   const createUser = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:8000/api/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error("Failed to create user");
-
+      await apiPost("/api/users", formData);
       toast.success("User created successfully");
       setIsCreateOpen(false);
       resetForm();
@@ -152,26 +126,12 @@ export default function UsersPage() {
     if (!editingUser) return;
 
     try {
-      const token = localStorage.getItem("token");
       const updateData: any = { ...formData };
       if (!updateData.password) {
         delete updateData.password; // Don't update password if empty
       }
 
-      const response = await fetch(
-        `http://localhost:8000/api/users/${editingUser.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updateData),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update user");
-
+      await apiPut(`/api/users/${editingUser.id}`, updateData);
       toast.success("User updated successfully");
       setIsEditOpen(false);
       setEditingUser(null);
@@ -186,19 +146,7 @@ export default function UsersPage() {
   // Delete user
   const deleteUser = async (userId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(
-        `http://localhost:8000/api/users/${userId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to delete user");
-
+      await apiDelete(`/api/users/${userId}`);
       toast.success("User deleted successfully");
       fetchUsers();
     } catch (error) {

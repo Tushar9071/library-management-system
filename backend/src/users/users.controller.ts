@@ -10,14 +10,16 @@ import {
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { JwtMiddleware } from '../auth/jwt.middleware';
+import { PermissionGuard } from '../auth/permission.guard';
+import { RequirePermissions } from '../auth/permissions.decorator';
 
 @Controller('/users')
-@UseGuards(JwtMiddleware)
+@UseGuards(PermissionGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @RequirePermissions('READ_USERS')
   async getAllUsers(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -44,6 +46,7 @@ export class UsersController {
   }
 
   @Get('roles')
+  @RequirePermissions('READ_ROLES')
   async getUserRoles() {
     const roles = await this.usersService.getUserRoles();
     return {
@@ -53,6 +56,7 @@ export class UsersController {
   }
 
   @Get(':id')
+  @RequirePermissions('READ_USERS')
   async getUserById(@Param('id') id: string) {
     const user = await this.usersService.findById(parseInt(id));
     return {
@@ -62,6 +66,7 @@ export class UsersController {
   }
 
   @Post()
+  @RequirePermissions('CREATE_USERS')
   async createUser(@Body() createUserDto: any) {
     const user = await this.usersService.create(createUserDto);
     return {
@@ -71,6 +76,7 @@ export class UsersController {
   }
 
   @Put(':id')
+  @RequirePermissions('UPDATE_USERS')
   async updateUser(@Param('id') id: string, @Body() updateUserDto: any) {
     const user = await this.usersService.update(parseInt(id), updateUserDto);
     return {
@@ -80,6 +86,7 @@ export class UsersController {
   }
 
   @Delete(':id')
+  @RequirePermissions('DELETE_USERS')
   async deleteUser(@Param('id') id: string) {
     await this.usersService.delete(parseInt(id));
     return {

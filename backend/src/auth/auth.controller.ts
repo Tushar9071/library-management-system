@@ -39,7 +39,15 @@ export class AuthController {
     if (!user) throw new UnauthorizedException();
     const userInfo = await this.authService.login(user);
 
-    res.cookie('token', userInfo.access_token, { httpOnly: true });
+    // Set cookie with better options for cross-origin
+    res.cookie('token', userInfo.access_token, { 
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/'
+    });
+    
     return {
       message: 'Login successful',
       data: {
@@ -47,6 +55,7 @@ export class AuthController {
         email: user.email,
         role: userInfo.role,
         name: userInfo.name,
+        token: userInfo.access_token, // Also return token in response for debugging
       },
     };
   }
@@ -62,6 +71,7 @@ export class AuthController {
     return {
       message: 'Google login successful',
       data: {
+        id: result.id,
         email: result.email,
         role: result.role,
         name: result.name,
@@ -79,6 +89,7 @@ export class AuthController {
     return {
       message: 'GitHub login successful',
       data: {
+        id: result.id,
         email: result.email,
         role: result.role,
         name: result.name,
