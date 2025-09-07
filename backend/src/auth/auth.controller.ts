@@ -40,14 +40,14 @@ export class AuthController {
     const userInfo = await this.authService.login(user);
 
     // Set cookie with better options for cross-origin
-    res.cookie('token', userInfo.access_token, { 
+    res.cookie('token', userInfo.access_token, {
       httpOnly: true,
       secure: false, // Set to true in production with HTTPS
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      path: '/'
+      path: '/',
     });
-    
+
     return {
       message: 'Login successful',
       data: {

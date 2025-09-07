@@ -42,7 +42,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProtectedFeature, ProtectedAction } from "@/components/ProtectedFeature";
+import {
+  ProtectedFeature,
+  ProtectedAction,
+} from "@/components/ProtectedFeature";
 import { Plus, Edit, Trash2, Users, Mail, Phone, Calendar } from "lucide-react";
 import { toast } from "react-hot-toast";
 
@@ -364,339 +367,339 @@ export default function UsersPage() {
               </Button>
             </DialogTrigger>
 
-          {/* Enhanced Search and Filter Controls */}
-          <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-slide-up">
-            <CardContent className="p-6">
-              <form onSubmit={handleSearch} className="space-y-6">
-                <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4">
-                  <div className="flex-1 relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Users className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                    </div>
-                    <Input
-                      type="text"
-                      placeholder="🔍 Search users by name, email, or phone..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300 hover:shadow-md"
-                    />
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                    <Select
-                      value={selectedRole}
-                      onValueChange={handleRoleChange}
-                    >
-                      <SelectTrigger className="w-full sm:w-56 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-purple-400 focus:border-purple-500 transition-all duration-300">
-                        <SelectValue placeholder="👤 All Roles" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
-                        <SelectItem
-                          value="all"
-                          className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50 font-medium"
-                        >
-                          👥 All Roles
-                        </SelectItem>
-                        {roles.map((role) => (
-                          <SelectItem
-                            key={role.id}
-                            value={role.name}
-                            className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
-                          >
-                            🔑 {role.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Button
-                      type="submit"
-                      className="w-full sm:w-auto h-12 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      ✨ Search
-                    </Button>
-                  </div>
-                </div>
-              </form>
-
-              {/* Enhanced Results Summary */}
-              {pagination && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
-                  <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
-                    <span className="flex items-center gap-1">
-                      📊 Showing {(pagination.page - 1) * pagination.limit + 1}{" "}
-                      to{" "}
-                      {Math.min(
-                        pagination.page * pagination.limit,
-                        pagination.totalCount
-                      )}{" "}
-                      of{" "}
-                      <span className="font-bold text-blue-600 dark:text-blue-400">
-                        {pagination.totalCount}
-                      </span>{" "}
-                      users
-                    </span>
-                    {searchTerm && (
-                      <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-medium">
-                        🔍 "{searchTerm}"
-                      </span>
-                    )}
-                    {selectedRole !== "all" && (
-                      <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
-                        👤 {selectedRole}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
-            {/* Header Section */}
-            <div className="relative overflow-hidden flex-shrink-0">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
-              <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-                <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <div className="flex-1">
-                  <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                    ✨ Create New User
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
-                    Add a new user to your library management system with role
-                    assignments and permissions.
-                  </DialogDescription>
-                </div>
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="px-6 pt-4 flex-shrink-0">
-              <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 h-full w-full animate-pulse"></div>
-              </div>
-            </div>
-
-            {/* Form Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <form
-                id="create-user-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  createUser();
-                }}
-                className="space-y-6"
-              >
-                {/* Personal Information */}
-                <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
-                  <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
-                    👤 Personal Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="name"
-                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                      >
-                        <Users className="h-4 w-4 text-blue-500" />
-                        Full Name *
-                      </Label>
+            {/* Enhanced Search and Filter Controls */}
+            <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-slide-up">
+              <CardContent className="p-6">
+                <form onSubmit={handleSearch} className="space-y-6">
+                  <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4">
+                    <div className="flex-1 relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Users className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+                      </div>
                       <Input
-                        id="name"
-                        placeholder="Enter full name (e.g., John Doe)"
-                        value={formData.name}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            name: e.target.value,
-                          }))
-                        }
-                        required
-                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                        type="text"
+                        placeholder="🔍 Search users by name, email, or phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300 hover:shadow-md"
                       />
                     </div>
-                    <div>
-                      <Label
-                        htmlFor="phone"
-                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                      >
-                        <Phone className="h-4 w-4 text-indigo-500" />
-                        Phone Number
-                      </Label>
-                      <Input
-                        id="phone"
-                        placeholder="Enter phone number (e.g., +1-234-567-8900)"
-                        value={formData.phone}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Account Information */}
-                <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
-                  <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
-                    🔐 Account Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="email"
-                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                      >
-                        <Mail className="h-4 w-4 text-purple-500" />
-                        Email Address *
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="Enter email address"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        required
-                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all duration-300"
-                      />
-                    </div>
-                    <div>
-                      <Label
-                        htmlFor="password"
-                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                      >
-                        <span className="text-pink-500">🔒</span>
-                        Password *
-                      </Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Enter secure password"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            password: e.target.value,
-                          }))
-                        }
-                        required
-                        className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-pink-500 focus:ring-4 focus:ring-pink-200 dark:focus:ring-pink-800 transition-all duration-300"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Role and Permissions */}
-                <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-700/30">
-                  <h3 className="text-lg font-bold text-green-700 dark:text-green-300 mb-4 flex items-center gap-2">
-                    🎭 Role & Status
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label
-                        htmlFor="role"
-                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                      >
-                        <span className="text-green-500">👑</span>
-                        User Role *
-                      </Label>
+                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                       <Select
-                        value={formData.roleId}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({ ...prev, roleId: value }))
-                        }
+                        value={selectedRole}
+                        onValueChange={handleRoleChange}
                       >
-                        <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-200 dark:focus:ring-green-800 transition-all duration-300">
-                          <SelectValue placeholder="👤 Select user role" />
+                        <SelectTrigger className="w-full sm:w-56 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-purple-400 focus:border-purple-500 transition-all duration-300">
+                          <SelectValue placeholder="👤 All Roles" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                          <SelectItem
+                            value="all"
+                            className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50 font-medium"
+                          >
+                            👥 All Roles
+                          </SelectItem>
                           {roles.map((role) => (
                             <SelectItem
                               key={role.id}
-                              value={role.id}
-                              className="rounded-lg hover:bg-green-50 dark:hover:bg-green-900/50"
+                              value={role.name}
+                              className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
                             >
                               🔑 {role.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div>
-                      <Label
-                        htmlFor="status"
-                        className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+
+                      <Button
+                        type="submit"
+                        className="w-full sm:w-auto h-12 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                       >
-                        <span className="text-emerald-500">📊</span>
-                        Account Status
-                      </Label>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(value) =>
-                          setFormData((prev) => ({ ...prev, status: value }))
-                        }
-                      >
-                        <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all duration-300">
-                          <SelectValue placeholder="📊 Select status" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
-                          <SelectItem
-                            value="active"
-                            className="rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/50"
-                          >
-                            ✅ Active
-                          </SelectItem>
-                          <SelectItem
-                            value="inactive"
-                            className="rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50"
-                          >
-                            ❌ Inactive
-                          </SelectItem>
-                          <SelectItem
-                            value="suspended"
-                            className="rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/50"
-                          >
-                            ⏸️ Suspended
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        ✨ Search
+                      </Button>
                     </div>
                   </div>
-                </div>
-              </form>
-            </div>
+                </form>
 
-            {/* Fixed Footer with Action Buttons */}
-            <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsCreateOpen(false)}
-                  className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
-                >
-                  ❌ Cancel
-                </Button>
-                <Button
-                  form="create-user-form"
-                  type="submit"
-                  className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[160px]"
-                >
-                  <Plus className="mr-2 h-5 w-5" />✨ Create User
-                </Button>
+                {/* Enhanced Results Summary */}
+                {pagination && (
+                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
+                    <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+                      <span className="flex items-center gap-1">
+                        📊 Showing{" "}
+                        {(pagination.page - 1) * pagination.limit + 1} to{" "}
+                        {Math.min(
+                          pagination.page * pagination.limit,
+                          pagination.totalCount
+                        )}{" "}
+                        of{" "}
+                        <span className="font-bold text-blue-600 dark:text-blue-400">
+                          {pagination.totalCount}
+                        </span>{" "}
+                        users
+                      </span>
+                      {searchTerm && (
+                        <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-medium">
+                          🔍 "{searchTerm}"
+                        </span>
+                      )}
+                      {selectedRole !== "all" && (
+                        <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                          👤 {selectedRole}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
+              {/* Header Section */}
+              <div className="relative overflow-hidden flex-shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
+                <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                  <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg">
+                    <Users className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                      ✨ Create New User
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                      Add a new user to your library management system with role
+                      assignments and permissions.
+                    </DialogDescription>
+                  </div>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+
+              {/* Progress Bar */}
+              <div className="px-6 pt-4 flex-shrink-0">
+                <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 h-full w-full animate-pulse"></div>
+                </div>
+              </div>
+
+              {/* Form Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                <form
+                  id="create-user-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    createUser();
+                  }}
+                  className="space-y-6"
+                >
+                  {/* Personal Information */}
+                  <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
+                    <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
+                      👤 Personal Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label
+                          htmlFor="name"
+                          className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                        >
+                          <Users className="h-4 w-4 text-blue-500" />
+                          Full Name *
+                        </Label>
+                        <Input
+                          id="name"
+                          placeholder="Enter full name (e.g., John Doe)"
+                          value={formData.name}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
+                          required
+                          className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="phone"
+                          className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                        >
+                          <Phone className="h-4 w-4 text-indigo-500" />
+                          Phone Number
+                        </Label>
+                        <Input
+                          id="phone"
+                          placeholder="Enter phone number (e.g., +1-234-567-8900)"
+                          value={formData.phone}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              phone: e.target.value,
+                            }))
+                          }
+                          className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Account Information */}
+                  <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
+                    <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
+                      🔐 Account Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label
+                          htmlFor="email"
+                          className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                        >
+                          <Mail className="h-4 w-4 text-purple-500" />
+                          Email Address *
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="Enter email address"
+                          value={formData.email}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              email: e.target.value,
+                            }))
+                          }
+                          required
+                          className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-800 transition-all duration-300"
+                        />
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="password"
+                          className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                        >
+                          <span className="text-pink-500">🔒</span>
+                          Password *
+                        </Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="Enter secure password"
+                          value={formData.password}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              password: e.target.value,
+                            }))
+                          }
+                          required
+                          className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-pink-500 focus:ring-4 focus:ring-pink-200 dark:focus:ring-pink-800 transition-all duration-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Role and Permissions */}
+                  <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-700/30">
+                    <h3 className="text-lg font-bold text-green-700 dark:text-green-300 mb-4 flex items-center gap-2">
+                      🎭 Role & Status
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label
+                          htmlFor="role"
+                          className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                        >
+                          <span className="text-green-500">👑</span>
+                          User Role *
+                        </Label>
+                        <Select
+                          value={formData.roleId}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({ ...prev, roleId: value }))
+                          }
+                        >
+                          <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-200 dark:focus:ring-green-800 transition-all duration-300">
+                            <SelectValue placeholder="👤 Select user role" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                            {roles.map((role) => (
+                              <SelectItem
+                                key={role.id}
+                                value={role.id}
+                                className="rounded-lg hover:bg-green-50 dark:hover:bg-green-900/50"
+                              >
+                                🔑 {role.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label
+                          htmlFor="status"
+                          className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                        >
+                          <span className="text-emerald-500">📊</span>
+                          Account Status
+                        </Label>
+                        <Select
+                          value={formData.status}
+                          onValueChange={(value) =>
+                            setFormData((prev) => ({ ...prev, status: value }))
+                          }
+                        >
+                          <SelectTrigger className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-200 dark:focus:ring-emerald-800 transition-all duration-300">
+                            <SelectValue placeholder="📊 Select status" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
+                            <SelectItem
+                              value="active"
+                              className="rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/50"
+                            >
+                              ✅ Active
+                            </SelectItem>
+                            <SelectItem
+                              value="inactive"
+                              className="rounded-lg hover:bg-red-50 dark:hover:bg-red-900/50"
+                            >
+                              ❌ Inactive
+                            </SelectItem>
+                            <SelectItem
+                              value="suspended"
+                              className="rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/50"
+                            >
+                              ⏸️ Suspended
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+              {/* Fixed Footer with Action Buttons */}
+              <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateOpen(false)}
+                    className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
+                  >
+                    ❌ Cancel
+                  </Button>
+                  <Button
+                    form="create-user-form"
+                    type="submit"
+                    className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[160px]"
+                  >
+                    <Plus className="mr-2 h-5 w-5" />✨ Create User
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </ProtectedAction>
       </div>
       {/* Enhanced Users Display */}
@@ -875,37 +878,37 @@ export default function UsersPage() {
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-2xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                                  🗑️ Delete User Account
-                                </AlertDialogTitle>
-                                <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base">
-                                  Are you sure you want to permanently delete{" "}
-                                  <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded">
-                                    "{user.name}"
-                                  </span>
-                                  ?<br />
-                                  <span className="text-red-600 dark:text-red-400 font-medium">
-                                    ⚠️ This action cannot be undone and will
-                                    remove all associated data.
-                                  </span>
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter className="gap-3">
-                                <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteUser(user.id)}
-                                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete User
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                              <AlertDialogContent className="rounded-2xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                    🗑️ Delete User Account
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base">
+                                    Are you sure you want to permanently delete{" "}
+                                    <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded">
+                                      "{user.name}"
+                                    </span>
+                                    ?<br />
+                                    <span className="text-red-600 dark:text-red-400 font-medium">
+                                      ⚠️ This action cannot be undone and will
+                                      remove all associated data.
+                                    </span>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="gap-3">
+                                  <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteUser(user.id)}
+                                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete User
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </ProtectedAction>
                         </div>
                       </TableCell>
@@ -996,37 +999,37 @@ export default function UsersPage() {
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20 max-w-md">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                                🗑️ Delete User
-                              </AlertDialogTitle>
-                              <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
-                                Are you sure you want to permanently delete{" "}
-                                <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded-lg">
-                                  "{user.name}"
-                                </span>
-                                ?<br />
-                                <br />
-                                <span className="text-red-600 dark:text-red-400 font-medium">
-                                  ⚠️ This action cannot be undone.
-                                </span>
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="gap-3">
-                              <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
-                                Cancel
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteUser(user.id)}
-                                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete User
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                            <AlertDialogContent className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20 max-w-md">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                  🗑️ Delete User
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
+                                  Are you sure you want to permanently delete{" "}
+                                  <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded-lg">
+                                    "{user.name}"
+                                  </span>
+                                  ?<br />
+                                  <br />
+                                  <span className="text-red-600 dark:text-red-400 font-medium">
+                                    ⚠️ This action cannot be undone.
+                                  </span>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter className="gap-3">
+                                <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
+                                  Cancel
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteUser(user.id)}
+                                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete User
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </ProtectedAction>
                       </div>
                     </div>

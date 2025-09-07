@@ -14,6 +14,12 @@ export class PermissionsController {
     return this.permissionsService.getAllPermissions();
   }
 
+  @Get('available')
+  async getAvailablePermissions() {
+    // This endpoint is accessible to all authenticated users
+    return this.permissionsService.getAllPermissions();
+  }
+
   @Get('role/:roleId')
   @RequirePermissions('MANAGE_PERMISSIONS')
   async getRolePermissions(@Param('roleId') roleId: string) {
@@ -29,11 +35,11 @@ export class PermissionsController {
   @RequirePermissions('MANAGE_PERMISSIONS')
   async updateRolePermissions(
     @Param('roleId') roleId: string,
-    @Body() body: { permissionIds: number[] }
+    @Body() body: { permissionIds: number[] },
   ) {
     return this.permissionsService.updateRolePermissions(
       parseInt(roleId),
-      body.permissionIds
+      body.permissionIds,
     );
   }
 

@@ -14,7 +14,8 @@ export default function DashboardPage() {
 
   // Use client-side role or fallback to empty string during SSR
   // Add safety check to ensure role is a valid string before calling toLowerCase
-  const currentUserRole = isClient && role && typeof role === 'string' ? role.toLowerCase() : "";
+  const currentUserRole =
+    isClient && role && typeof role === "string" ? role.toLowerCase() : "";
 
   let welcomeMessage = "Welcome!";
   let description = "Explore the library portal.";

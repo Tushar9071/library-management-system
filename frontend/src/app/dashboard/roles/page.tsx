@@ -35,7 +35,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProtectedFeature, ProtectedAction } from "@/components/ProtectedFeature";
+import {
+  ProtectedFeature,
+  ProtectedAction,
+} from "@/components/ProtectedFeature";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus,
@@ -55,13 +58,35 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
+interface Permission {
+  id: number;
+  name: string;
+  description: string;
+  category: string;
+  action: string;
+}
+
+interface EmailDomainRule {
+  id: number;
+  domainPattern: string;
+  description: string;
+  priority: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
 interface Role {
   id: string;
   name: string;
-  description: string;
-  permissions: string[];
+  description?: string;
+  permissions: Permission[];
   userCount: number;
+  emailDomainRules?: EmailDomainRule[];
+  maxBorrowDays?: number;
+  dailyFine?: number;
+  maxActiveBorrows?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export default function RolesPage() {
@@ -83,22 +108,20 @@ export default function RolesPage() {
     name: "",
     description: "",
     permissions: [] as string[],
+    emailDomainRules: [] as Omit<
+      EmailDomainRule,
+      "id" | "createdAt" | "isActive"
+    >[],
+    maxBorrowDays: 15,
+    dailyFine: 5,
+    maxActiveBorrows: 3,
   });
 
-  const availablePermissions = [
-    "READ_BOOKS",
-    "CREATE_BOOKS",
-    "UPDATE_BOOKS",
-    "DELETE_BOOKS",
-    "READ_USERS",
-    "CREATE_USERS",
-    "UPDATE_USERS",
-    "DELETE_USERS",
-    "MANAGE_ROLES",
-    "ASSIGN_ROLES",
-    "VIEW_REPORTS",
-    "SYSTEM_CONFIG",
-  ];
+  // Available permissions state
+  const [availablePermissions, setAvailablePermissions] = useState<string[]>(
+    []
+  );
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
 
   // Helper to normalize various API list shapes into Role[]
   const toRoleArray = (data: unknown): Role[] => {
@@ -114,7 +137,59 @@ export default function RolesPage() {
 
   useEffect(() => {
     fetchRoles();
+    fetchAvailablePermissions();
   }, []);
+
+  const fetchAvailablePermissions = async () => {
+    try {
+      setPermissionsLoading(true);
+      const response = await apiGet("/permissions/available", false);
+      if (response.ok) {
+        const data = await response.json();
+        // The backend returns permissions as an array of objects with name property
+        const permissionNames = Array.isArray(data)
+          ? data.map((permission: any) => permission.name)
+          : [];
+        setAvailablePermissions(permissionNames);
+      } else {
+        console.error("Failed to fetch permissions");
+        // Fallback to default permissions if API fails
+        setAvailablePermissions([
+          "READ_BOOKS",
+          "CREATE_BOOKS",
+          "UPDATE_BOOKS",
+          "DELETE_BOOKS",
+          "READ_USERS",
+          "CREATE_USERS",
+          "UPDATE_USERS",
+          "DELETE_USERS",
+          "MANAGE_ROLES",
+          "ASSIGN_ROLES",
+          "VIEW_REPORTS",
+          "SYSTEM_CONFIG",
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      // Fallback to default permissions
+      setAvailablePermissions([
+        "READ_BOOKS",
+        "CREATE_BOOKS",
+        "UPDATE_BOOKS",
+        "DELETE_BOOKS",
+        "READ_USERS",
+        "CREATE_USERS",
+        "UPDATE_USERS",
+        "DELETE_USERS",
+        "MANAGE_ROLES",
+        "ASSIGN_ROLES",
+        "VIEW_REPORTS",
+        "SYSTEM_CONFIG",
+      ]);
+    } finally {
+      setPermissionsLoading(false);
+    }
+  };
 
   const fetchRoles = async () => {
     try {
@@ -122,9 +197,11 @@ export default function RolesPage() {
       const response = await apiGet("/roles");
       if (response.ok) {
         const data = await response.json();
-        setRoles(toRoleArray(data));
+        const roles = toRoleArray(data);
+        setRoles(roles);
       } else {
         const errorData = await response.json();
+        console.error("Failed to fetch roles:", errorData);
         toast.error(errorData.message || "Failed to fetch roles");
         setRoles([]);
       }
@@ -148,9 +225,18 @@ export default function RolesPage() {
 
       if (response.ok) {
         const payload = await response.json();
-        const newRole = (payload as any)?.role ?? payload;
+        const newRole =
+          (payload as any)?.data ?? (payload as any)?.role ?? payload;
         setRoles((prev) => [...prev, newRole as Role]);
-        setFormData({ name: "", description: "", permissions: [] });
+        setFormData({
+          name: "",
+          description: "",
+          permissions: [],
+          emailDomainRules: [],
+          maxBorrowDays: 15,
+          dailyFine: 5,
+          maxActiveBorrows: 3,
+        });
         setIsCreateDialogOpen(false);
         toast.success("Role created successfully");
       } else {
@@ -174,7 +260,8 @@ export default function RolesPage() {
 
       if (response.ok) {
         const payload = await response.json();
-        const updatedRole = (payload as any)?.role ?? payload;
+        const updatedRole =
+          (payload as any)?.data ?? (payload as any)?.role ?? payload;
         setRoles((prev) =>
           prev.map((r) => (r.id === editingRole.id ? (updatedRole as Role) : r))
         );
@@ -211,9 +298,13 @@ export default function RolesPage() {
   const openEditDialog = (role: Role) => {
     setEditingRole(role);
     setFormData({
-      name: role.name,
-      description: role.description,
-      permissions: [...role.permissions],
+      name: role.name || "",
+      description: role.description || "",
+      permissions: (role.permissions || []).map((p) => p.name),
+      emailDomainRules: role.emailDomainRules || [],
+      maxBorrowDays: role.maxBorrowDays ?? 15,
+      dailyFine: role.dailyFine ?? 5,
+      maxActiveBorrows: role.maxActiveBorrows ?? 3,
     });
     setIsEditDialogOpen(true);
   };
@@ -232,11 +323,53 @@ export default function RolesPage() {
     }));
   };
 
+  const updateBorrowPolicy = (
+    field: "maxBorrowDays" | "dailyFine" | "maxActiveBorrows",
+    value: number
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Email domain rules handlers
+  const addEmailDomainRule = () => {
+    setFormData((prev) => ({
+      ...prev,
+      emailDomainRules: [
+        ...prev.emailDomainRules,
+        {
+          domainPattern: "",
+          description: "",
+          priority: 0,
+        },
+      ],
+    }));
+  };
+
+  const removeEmailDomainRule = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      emailDomainRules: prev.emailDomainRules.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateEmailDomainRule = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      emailDomainRules: prev.emailDomainRules.map((rule, i) =>
+        i === index ? { ...rule, [field]: value } : rule
+      ),
+    }));
+  };
+
   // Filter roles based on search
   const filteredRoles = roles.filter(
     (role) =>
-      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      role.description.toLowerCase().includes(searchTerm.toLowerCase())
+      (role.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (role.description?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
   // Pagination logic
@@ -257,7 +390,7 @@ export default function RolesPage() {
     }
   };
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 flex items-center justify-center p-6">
         <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-2xl rounded-2xl p-8 max-w-md w-full">
@@ -312,162 +445,347 @@ export default function RolesPage() {
                   Add Role
                 </Button>
               </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
-              {/* Header Section */}
-              <div className="relative overflow-hidden flex-shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
-                <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-                  <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
-                    <Shield className="h-8 w-8 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-purple-700 dark:from-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
-                      ✨ Add New Role
-                    </DialogTitle>
-                    <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
-                      🛡️ Create a new role with specific permissions for your
-                      library system
-                    </DialogDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      Ready
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="px-6 pt-4 flex-shrink-0">
-                <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse"></div>
-                </div>
-              </div>
-
-              {/* Form Content - Scrollable */}
-              <div className="flex-1 overflow-y-auto px-6 py-6">
-                <form
-                  id="create-role-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleCreate();
-                  }}
-                >
-                  <div className="space-y-6">
-                    {/* Basic Information */}
-                    <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
-                      <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
-                        📝 Basic Information
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <Label
-                            htmlFor="name"
-                            className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                          >
-                            <Shield className="h-4 w-4 text-blue-500" />
-                            Role Name *
-                          </Label>
-                          <Input
-                            id="name"
-                            placeholder="Enter role name (e.g., Admin, Student, Librarian)"
-                            value={formData.name}
-                            onChange={(e) =>
-                              setFormData({ ...formData, name: e.target.value })
-                            }
-                            required
-                            className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
-                          />
-                        </div>
-                        <div>
-                          <Label
-                            htmlFor="description"
-                            className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
-                          >
-                            <FileText className="h-4 w-4 text-indigo-500" />
-                            Description
-                          </Label>
-                          <Textarea
-                            id="description"
-                            placeholder="Enter role description and responsibilities..."
-                            value={formData.description}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                description: e.target.value,
-                              })
-                            }
-                            rows={3}
-                            className="mt-2 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-300 resize-none"
-                          />
-                        </div>
-                      </div>
+              <DialogContent className="sm:max-w-[800px] max-h-[90vh] flex flex-col bg-gradient-to-br from-slate-50/95 via-white/95 to-blue-50/95 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-indigo-900/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30">
+                {/* Header Section */}
+                <div className="relative overflow-hidden flex-shrink-0">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
+                  <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                    <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+                      <Shield className="h-8 w-8 text-white" />
                     </div>
+                    <div className="flex-1">
+                      <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-purple-700 dark:from-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
+                        ✨ Add New Role
+                      </DialogTitle>
+                      <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                        🛡️ Create a new role with specific permissions for your
+                        library system
+                      </DialogDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        Ready
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Permissions */}
-                    <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
-                      <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
-                        🔐 Permissions ({formData.permissions.length} selected)
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-purple-200/50 dark:border-purple-700/30">
-                        {availablePermissions.map((permission) => (
-                          <div
-                            key={permission}
-                            className={`flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
-                              formData.permissions.includes(permission)
-                                ? "bg-purple-50 dark:bg-purple-900/50 border-purple-300 dark:border-purple-600"
-                                : "bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/30"
-                            }`}
-                            onClick={() => togglePermission(permission)}
-                          >
-                            <div
-                              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                                formData.permissions.includes(permission)
-                                  ? "bg-purple-500 border-purple-500"
-                                  : "border-gray-300 dark:border-gray-600"
-                              }`}
+                {/* Progress Bar */}
+                <div className="px-6 pt-4 flex-shrink-0">
+                  <div className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse"></div>
+                  </div>
+                </div>
+
+                {/* Form Content - Scrollable */}
+                <div className="flex-1 overflow-y-auto px-6 py-6">
+                  <form
+                    id="create-role-form"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleCreate();
+                    }}
+                  >
+                    <div className="space-y-6">
+                      {/* Basic Information */}
+                      <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
+                        <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-4 flex items-center gap-2">
+                          📝 Basic Information
+                        </h3>
+                        <div className="space-y-4">
+                          <div>
+                            <Label
+                              htmlFor="name"
+                              className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
                             >
-                              {formData.permissions.includes(permission) && (
-                                <Check className="h-3 w-3 text-white" />
-                              )}
-                            </div>
-                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex-1">
-                              {permission
-                                .replace(/_/g, " ")
-                                .toLowerCase()
-                                .replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </label>
+                              <Shield className="h-4 w-4 text-blue-500" />
+                              Role Name *
+                            </Label>
+                            <Input
+                              id="name"
+                              placeholder="Enter role name (e.g., Admin, Student, Librarian)"
+                              value={formData.name}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  name: e.target.value,
+                                })
+                              }
+                              required
+                              className="mt-2 h-11 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300"
+                            />
                           </div>
-                        ))}
+                          <div>
+                            <Label
+                              htmlFor="description"
+                              className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2"
+                            >
+                              <FileText className="h-4 w-4 text-indigo-500" />
+                              Description
+                            </Label>
+                            <Textarea
+                              id="description"
+                              placeholder="Enter role description and responsibilities..."
+                              value={formData.description}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  description: e.target.value,
+                                })
+                              }
+                              rows={3}
+                              className="mt-2 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-indigo-500 focus:ring-4 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-300 resize-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Permissions */}
+                      <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
+                        <h3 className="text-lg font-bold text-purple-700 dark:text-purple-300 mb-4 flex items-center gap-2">
+                          🔐 Permissions ({formData.permissions.length}{" "}
+                          selected)
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-purple-200/50 dark:border-purple-700/30">
+                          {permissionsLoading ? (
+                            <div className="col-span-2 text-center py-8 text-gray-500 dark:text-gray-400">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                              Loading permissions...
+                            </div>
+                          ) : (
+                            availablePermissions.map((permission) => (
+                              <div
+                                key={permission}
+                                className={`flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                                  formData.permissions.includes(permission)
+                                    ? "bg-purple-50 dark:bg-purple-900/50 border-purple-300 dark:border-purple-600"
+                                    : "bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                                }`}
+                                onClick={() => togglePermission(permission)}
+                              >
+                                <div
+                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                    formData.permissions.includes(permission)
+                                      ? "bg-purple-500 border-purple-500"
+                                      : "border-gray-300 dark:border-gray-600"
+                                  }`}
+                                >
+                                  {formData.permissions.includes(
+                                    permission
+                                  ) && <Check className="h-3 w-3 text-white" />}
+                                </div>
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex-1">
+                                  {permission
+                                    .replace(/_/g, " ")
+                                    .toLowerCase()
+                                    .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                </label>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Borrow Policy */}
+                      <div className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30">
+                        <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-300 mb-4 flex items-center gap-2">
+                          📚 Borrow Policy
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <Label className="text-sm font-semibold">
+                              Max Borrow Days
+                            </Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={formData.maxBorrowDays}
+                              onChange={(e) =>
+                                updateBorrowPolicy(
+                                  "maxBorrowDays",
+                                  Number(e.target.value)
+                                )
+                              }
+                              className="mt-2"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-semibold">
+                              Daily Fine (₹)
+                            </Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              step="0.5"
+                              value={formData.dailyFine}
+                              onChange={(e) =>
+                                updateBorrowPolicy(
+                                  "dailyFine",
+                                  Number(e.target.value)
+                                )
+                              }
+                              className="mt-2"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-semibold">
+                              Max Active Borrows
+                            </Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={formData.maxActiveBorrows}
+                              onChange={(e) =>
+                                updateBorrowPolicy(
+                                  "maxActiveBorrows",
+                                  Number(e.target.value)
+                                )
+                              }
+                              className="mt-2"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Email Domain Rules */}
+                      <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                            🌐 Email Domain Rules (
+                            {
+                              formData.emailDomainRules.filter(
+                                (rule) => rule.domainPattern
+                              ).length
+                            }{" "}
+                            active)
+                          </h3>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={addEmailDomainRule}
+                            className="bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/50 dark:hover:bg-emerald-800/50 border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Rule
+                          </Button>
+                        </div>
+                        <div className="space-y-4 max-h-64 overflow-y-auto">
+                          {formData.emailDomainRules.map((rule, index) => (
+                            <div
+                              key={index}
+                              className="p-4 bg-white/70 dark:bg-gray-800/70 rounded-xl border border-emerald-200/50 dark:border-emerald-700/30"
+                            >
+                              <div className="flex items-start justify-between mb-3">
+                                <Label className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                                  Rule {index + 1}
+                                </Label>
+                                {formData.emailDomainRules.length > 0 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeEmailDomainRule(index)}
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <Label className="text-xs text-gray-600 dark:text-gray-400">
+                                    Domain Pattern
+                                  </Label>
+                                  <Input
+                                    placeholder="@darshan.ac.in or regex (optional)"
+                                    value={rule.domainPattern}
+                                    onChange={(e) =>
+                                      updateEmailDomainRule(
+                                        index,
+                                        "domainPattern",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="mt-1 h-9 text-sm bg-white/80 dark:bg-gray-700/80 border border-emerald-200 dark:border-emerald-600 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-600 dark:text-gray-400">
+                                    Priority
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="0"
+                                    value={rule.priority}
+                                    onChange={(e) =>
+                                      updateEmailDomainRule(
+                                        index,
+                                        "priority",
+                                        parseInt(e.target.value) || 0
+                                      )
+                                    }
+                                    className="mt-1 h-9 text-sm bg-white/80 dark:bg-gray-700/80 border border-emerald-200 dark:border-emerald-600 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800"
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-gray-600 dark:text-gray-400">
+                                    Description
+                                  </Label>
+                                  <Input
+                                    placeholder="Auto-assign rule description"
+                                    value={rule.description}
+                                    onChange={(e) =>
+                                      updateEmailDomainRule(
+                                        index,
+                                        "description",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="mt-1 h-9 text-sm bg-white/80 dark:bg-gray-700/80 border border-emerald-200 dark:border-emerald-600 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 p-3 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-lg border border-emerald-200/50 dark:border-emerald-700/30">
+                          <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                            <strong>💡 Tips:</strong> Email domain rules are
+                            optional. Use patterns like @darshan.ac.in for exact
+                            matches or regex patterns for complex rules. Higher
+                            priority rules are checked first. Leave empty to
+                            create a role without automatic assignment.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </form>
-              </div>
-
-              {/* Fixed Footer with Action Buttons */}
-              <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
-                <div className="flex justify-end gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                    className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
-                  >
-                    ❌ Cancel
-                  </Button>
-                  <Button
-                    form="create-role-form"
-                    type="submit"
-                    className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[140px]"
-                  >
-                    <Shield className="mr-2 h-5 w-5" />✨ Create Role
-                  </Button>
+                  </form>
                 </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+
+                {/* Fixed Footer with Action Buttons */}
+                <div className="flex-shrink-0 border-t border-gray-200/50 dark:border-gray-700/50 p-6 bg-gradient-to-r from-slate-50/90 to-blue-50/90 dark:from-slate-800/90 dark:to-indigo-900/90 backdrop-blur-sm">
+                  <div className="flex justify-end gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                      className="px-8 py-3 h-12 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:scale-105 transition-all duration-300 font-medium"
+                    >
+                      ❌ Cancel
+                    </Button>
+                    <Button
+                      form="create-role-form"
+                      type="submit"
+                      className="px-8 py-3 h-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-600 hover:from-blue-600 hover:via-purple-600 hover:to-indigo-700 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 min-w-[140px]"
+                    >
+                      <Shield className="mr-2 h-5 w-5" />✨ Create Role
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </ProtectedAction>
         </div>
 
@@ -555,14 +873,14 @@ export default function RolesPage() {
                                   </div>
                                   <div
                                     className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2"
-                                    title={role.description}
+                                    title={role.description || ""}
                                   >
-                                    {role.description.length > 60
-                                      ? `${role.description.substring(
+                                    {(role.description || "").length > 60
+                                      ? `${(role.description || "").substring(
                                           0,
                                           60
                                         )}...`
-                                      : role.description}
+                                      : role.description || "No description"}
                                   </div>
                                 </div>
                               </div>
@@ -573,30 +891,33 @@ export default function RolesPage() {
                               <div className="space-y-3">
                                 <div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                    Permissions ({role.permissions.length}):
+                                    Permissions (
+                                    {(role.permissions || []).length}):
                                   </div>
                                   <div className="flex flex-wrap gap-1">
-                                    {role.permissions
+                                    {(role.permissions || [])
                                       .slice(0, 2)
-                                      .map((permission) => (
+                                      .map((permission, permIdx) => (
                                         <Badge
-                                          key={permission}
+                                          key={`${role.id}-permission-${permIdx}-${permission.name}`}
                                           className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 text-xs hover:scale-105 transition-transform duration-300"
                                         >
-                                          {permission
+                                          {permission.name
                                             .replace(/_/g, " ")
                                             .toLowerCase()
-                                            .replace(/\b\w/g, (l) =>
+                                            .replace(/\b\w/g, (l: string) =>
                                               l.toUpperCase()
                                             )}
                                         </Badge>
                                       ))}
-                                    {role.permissions.length > 2 && (
+                                    {(role.permissions || []).length > 2 && (
                                       <Badge
+                                        key={`${role.id}-more-permissions`}
                                         variant="outline"
                                         className="text-xs bg-gray-100 dark:bg-gray-800 hover:scale-105 transition-transform duration-300"
                                       >
-                                        +{role.permissions.length - 2} more
+                                        +{(role.permissions || []).length - 2}{" "}
+                                        more
                                       </Badge>
                                     )}
                                   </div>
@@ -618,7 +939,8 @@ export default function RolesPage() {
                                 <div className="flex items-center gap-2">
                                   <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"></div>
                                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                                    {role.permissions.length} permissions
+                                    {(role.permissions || []).length}{" "}
+                                    permissions
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -670,7 +992,10 @@ export default function RolesPage() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <ProtectedAction resource="roles" action="update">
+                                <ProtectedAction
+                                  resource="roles"
+                                  action="update"
+                                >
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -683,7 +1008,10 @@ export default function RolesPage() {
                                     <Edit className="h-4 w-4" />
                                   </Button>
                                 </ProtectedAction>
-                                <ProtectedAction resource="roles" action="delete">
+                                <ProtectedAction
+                                  resource="roles"
+                                  action="delete"
+                                >
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button
@@ -695,38 +1023,38 @@ export default function RolesPage() {
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
                                     </AlertDialogTrigger>
-                                  <AlertDialogContent className="rounded-2xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20">
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                                        🗑️ Delete Role
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base">
-                                        Are you sure you want to permanently
-                                        delete the role{" "}
-                                        <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded">
-                                          "{role.name}"
-                                        </span>
-                                        ?<br />
-                                        <span className="text-red-600 dark:text-red-400 font-medium">
-                                          ⚠️ This will affect {role.userCount}{" "}
-                                          users and cannot be undone.
-                                        </span>
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter className="gap-3">
-                                      <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
-                                        Cancel
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDelete(role.id)}
-                                        className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Role
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                    <AlertDialogContent className="rounded-2xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20">
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                          🗑️ Delete Role
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base">
+                                          Are you sure you want to permanently
+                                          delete the role{" "}
+                                          <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded">
+                                            "{role.name}"
+                                          </span>
+                                          ?<br />
+                                          <span className="text-red-600 dark:text-red-400 font-medium">
+                                            ⚠️ This will affect {role.userCount}{" "}
+                                            users and cannot be undone.
+                                          </span>
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter className="gap-3">
+                                        <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDelete(role.id)}
+                                          className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                                        >
+                                          <Trash2 className="mr-2 h-4 w-4" />
+                                          Delete Role
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 </ProtectedAction>
                               </div>
                             </TableCell>
@@ -771,16 +1099,17 @@ export default function RolesPage() {
                                 </h3>
                                 <p
                                   className="text-purple-100 text-sm mb-2 line-clamp-2"
-                                  title={role.description}
+                                  title={role.description || ""}
                                 >
-                                  {role.description}
+                                  {role.description || "No description"}
                                 </p>
                                 <div className="flex items-center gap-2 text-purple-100">
                                   <Badge
                                     variant="outline"
                                     className="bg-white/20 border-white/30 text-white text-xs hover:bg-white/30 transition-colors duration-300"
                                   >
-                                    🔐 {role.permissions.length} permissions
+                                    🔐 {(role.permissions || []).length}{" "}
+                                    permissions
                                   </Badge>
                                 </div>
                               </div>
@@ -823,39 +1152,39 @@ export default function RolesPage() {
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </AlertDialogTrigger>
-                                <AlertDialogContent className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20 max-w-md">
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                                      🗑️ Delete Role
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
-                                      Are you sure you want to permanently
-                                      delete{" "}
-                                      <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded-lg">
-                                        "{role.name}"
-                                      </span>
-                                      ?<br />
-                                      <br />
-                                      <span className="text-red-600 dark:text-red-400 font-medium">
-                                        ⚠️ This will affect {role.userCount}{" "}
-                                        users and cannot be undone.
-                                      </span>
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter className="gap-3">
-                                    <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(role.id)}
-                                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-                                    >
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete Role
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                  <AlertDialogContent className="rounded-3xl border-0 shadow-2xl bg-gradient-to-br from-white to-red-50 dark:from-gray-900 dark:to-red-900/20 max-w-md">
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                        🗑️ Delete Role
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
+                                        Are you sure you want to permanently
+                                        delete{" "}
+                                        <span className="font-bold text-gray-900 dark:text-white bg-yellow-100 dark:bg-yellow-900/50 px-2 py-1 rounded-lg">
+                                          "{role.name}"
+                                        </span>
+                                        ?<br />
+                                        <br />
+                                        <span className="text-red-600 dark:text-red-400 font-medium">
+                                          ⚠️ This will affect {role.userCount}{" "}
+                                          users and cannot be undone.
+                                        </span>
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="gap-3">
+                                      <AlertDialogCancel className="rounded-xl border-2 border-gray-300 hover:bg-gray-100 transition-all duration-300">
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(role.id)}
+                                        className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Role
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </ProtectedAction>
                             </div>
                           </div>
@@ -866,28 +1195,31 @@ export default function RolesPage() {
                           {/* Permissions Section */}
                           <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
                             <h4 className="text-sm font-bold text-blue-700 dark:text-blue-300 mb-3 flex items-center gap-2">
-                              🔐 Permissions ({role.permissions.length})
+                              🔐 Permissions ({(role.permissions || []).length})
                             </h4>
                             <div className="flex flex-wrap gap-2">
-                              {role.permissions
+                              {(role.permissions || [])
                                 .slice(0, 4)
-                                .map((permission) => (
+                                .map((permission, permIdx) => (
                                   <Badge
-                                    key={permission}
+                                    key={`${role.id}-mobile-permission-${permIdx}-${permission.name}`}
                                     className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/50 dark:to-indigo-900/50 border-blue-300 dark:border-blue-600 text-blue-700 dark:text-blue-300 text-xs hover:scale-105 transition-transform duration-300"
                                   >
-                                    {permission
+                                    {permission.name
                                       .replace(/_/g, " ")
                                       .toLowerCase()
-                                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                      .replace(/\b\w/g, (l: string) =>
+                                        l.toUpperCase()
+                                      )}
                                   </Badge>
                                 ))}
-                              {role.permissions.length > 4 && (
+                              {(role.permissions || []).length > 4 && (
                                 <Badge
+                                  key={`${role.id}-mobile-more-permissions`}
                                   variant="outline"
                                   className="text-xs bg-blue-50 dark:bg-blue-900/30 hover:scale-105 transition-transform duration-300"
                                 >
-                                  +{role.permissions.length - 4} more
+                                  +{(role.permissions || []).length - 4} more
                                 </Badge>
                               )}
                             </div>
@@ -919,7 +1251,7 @@ export default function RolesPage() {
                               <div className="flex items-center gap-2">
                                 <Shield className="h-5 w-5 text-green-500" />
                                 <span className="text-lg font-bold text-gray-900 dark:text-white">
-                                  {role.permissions.length}
+                                  {(role.permissions || []).length}
                                 </span>
                               </div>
                               <div className="text-xs text-green-600 dark:text-green-400 mt-1">
@@ -1122,35 +1454,155 @@ export default function RolesPage() {
                       🔐 Permissions ({formData.permissions.length} selected)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-purple-200/50 dark:border-purple-700/30">
-                      {availablePermissions.map((permission) => (
-                        <div
-                          key={permission}
-                          className={`flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
-                            formData.permissions.includes(permission)
-                              ? "bg-purple-50 dark:bg-purple-900/50 border-purple-300 dark:border-purple-600"
-                              : "bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/30"
-                          }`}
-                          onClick={() => togglePermission(permission)}
-                        >
+                      {permissionsLoading ? (
+                        <div className="col-span-2 text-center py-8 text-gray-500 dark:text-gray-400">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto mb-2"></div>
+                          Loading permissions...
+                        </div>
+                      ) : (
+                        availablePermissions.map((permission) => (
                           <div
-                            className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            key={permission}
+                            className={`flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
                               formData.permissions.includes(permission)
-                                ? "bg-purple-500 border-purple-500"
-                                : "border-gray-300 dark:border-gray-600"
+                                ? "bg-purple-50 dark:bg-purple-900/50 border-purple-300 dark:border-purple-600"
+                                : "bg-white/80 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/30"
                             }`}
+                            onClick={() => togglePermission(permission)}
                           >
-                            {formData.permissions.includes(permission) && (
-                              <Check className="h-3 w-3 text-white" />
+                            <div
+                              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                formData.permissions.includes(permission)
+                                  ? "bg-purple-500 border-purple-500"
+                                  : "border-gray-300 dark:border-gray-600"
+                              }`}
+                            >
+                              {formData.permissions.includes(permission) && (
+                                <Check className="h-3 w-3 text-white" />
+                              )}
+                            </div>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex-1">
+                              {permission
+                                .replace(/_/g, " ")
+                                .toLowerCase()
+                                .replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Email Domain Rules */}
+                  <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                        🌐 Email Domain Rules (
+                        {
+                          formData.emailDomainRules.filter(
+                            (rule) => rule.domainPattern
+                          ).length
+                        }{" "}
+                        active)
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addEmailDomainRule}
+                        className="bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/50 dark:hover:bg-emerald-800/50 border-emerald-300 dark:border-emerald-600 text-emerald-700 dark:text-emerald-300"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Rule
+                      </Button>
+                    </div>
+                    <div className="space-y-4 max-h-64 overflow-y-auto">
+                      {formData.emailDomainRules.map((rule, index) => (
+                        <div
+                          key={index}
+                          className="p-4 bg-white/70 dark:bg-gray-800/70 rounded-xl border border-emerald-200/50 dark:border-emerald-700/30"
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <Label className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                              Rule {index + 1}
+                            </Label>
+                            {formData.emailDomainRules.length > 0 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeEmailDomainRule(index)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             )}
                           </div>
-                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex-1">
-                            {permission
-                              .replace(/_/g, " ")
-                              .toLowerCase()
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                              <Label className="text-xs text-gray-600 dark:text-gray-400">
+                                Domain Pattern
+                              </Label>
+                              <Input
+                                placeholder="@darshan.ac.in or regex (optional)"
+                                value={rule.domainPattern}
+                                onChange={(e) =>
+                                  updateEmailDomainRule(
+                                    index,
+                                    "domainPattern",
+                                    e.target.value
+                                  )
+                                }
+                                className="mt-1 h-9 text-sm bg-white/80 dark:bg-gray-700/80 border border-emerald-200 dark:border-emerald-600 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600 dark:text-gray-400">
+                                Priority
+                              </Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={rule.priority}
+                                onChange={(e) =>
+                                  updateEmailDomainRule(
+                                    index,
+                                    "priority",
+                                    parseInt(e.target.value) || 0
+                                  )
+                                }
+                                className="mt-1 h-9 text-sm bg-white/80 dark:bg-gray-700/80 border border-emerald-200 dark:border-emerald-600 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-600 dark:text-gray-400">
+                                Description
+                              </Label>
+                              <Input
+                                placeholder="Auto-assign rule description"
+                                value={rule.description}
+                                onChange={(e) =>
+                                  updateEmailDomainRule(
+                                    index,
+                                    "description",
+                                    e.target.value
+                                  )
+                                }
+                                className="mt-1 h-9 text-sm bg-white/80 dark:bg-gray-700/80 border border-emerald-200 dark:border-emerald-600 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:focus:ring-emerald-800"
+                              />
+                            </div>
+                          </div>
                         </div>
                       ))}
+                    </div>
+                    <div className="mt-3 p-3 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-lg border border-emerald-200/50 dark:border-emerald-700/30">
+                      <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                        <strong>💡 Tips:</strong> Email domain rules are
+                        optional. Use patterns like @darshan.ac.in for exact
+                        matches or regex patterns for complex rules. Higher
+                        priority rules are checked first. Leave empty to create
+                        a role without automatic assignment.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1180,48 +1632,75 @@ export default function RolesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* View Dialog */}
+        {/* Enhanced View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Role Details</DialogTitle>
-              <DialogDescription>
-                Complete information about this role and its permissions.
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col">
+            {/* Enhanced Header */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-10 dark:opacity-20"></div>
+              <div className="relative flex items-center gap-4 p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+                <div className="p-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform">
+                  <Eye className="h-8 w-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-blue-700 to-purple-700 dark:from-blue-300 dark:to-purple-300 bg-clip-text text-transparent">
+                    👁️ Role Details
+                  </DialogTitle>
+                  <DialogDescription className="text-gray-600 dark:text-gray-400 mt-1">
+                    🔍 Complete information about this role and its
+                    configurations
+                  </DialogDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    Viewing
+                  </span>
+                </div>
+              </div>
+            </div>
 
-            {viewingRole && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Role Name
-                      </Label>
-                      <p className="mt-1 text-base font-semibold text-gray-900">
-                        {viewingRole.name}
-                      </p>
-                    </div>
-
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Users with this Role
-                      </Label>
-                      <div className="mt-1 flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-base font-semibold text-gray-900">
-                          {viewingRole.userCount}
-                        </span>
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {viewingRole && (
+                <div className="space-y-6">
+                  {/* Basic Information Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200/50 dark:border-blue-700/30">
+                        <Label className="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Role Name
+                        </Label>
+                        <p className="mt-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+                          {viewingRole.name}
+                        </p>
                       </div>
-                    </div>
 
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Created Date
-                      </Label>
-                      <div className="mt-1 flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <span className="text-base text-gray-900">
+                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl border border-green-200/50 dark:border-green-700/30">
+                        <Label className="text-sm font-semibold text-green-700 dark:text-green-300 flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Users with this Role
+                        </Label>
+                        <div className="mt-2 flex items-center gap-3">
+                          <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                            {viewingRole.userCount}
+                          </span>
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
+                          >
+                            Active Users
+                          </Badge>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl border border-amber-200/50 dark:border-amber-700/30">
+                        <Label className="text-sm font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Created Date
+                        </Label>
+                        <p className="mt-2 text-base font-medium text-gray-900 dark:text-gray-100">
                           {new Date(viewingRole.createdAt).toLocaleDateString(
                             "en-US",
                             {
@@ -1230,58 +1709,146 @@ export default function RolesPage() {
                               day: "numeric",
                             }
                           )}
-                        </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl border border-purple-200/50 dark:border-purple-700/30">
+                        <Label className="text-sm font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Description
+                        </Label>
+                        <p className="mt-2 text-base text-gray-900 dark:text-gray-100 leading-relaxed">
+                          {viewingRole.description || "No description provided"}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700">
-                        Description
-                      </Label>
-                      <p className="mt-1 text-base text-gray-900 bg-gray-50 p-3 rounded-lg">
-                        {viewingRole.description || "No description provided"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                    Permissions ({viewingRole.permissions.length})
-                  </Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {viewingRole.permissions.map((permission) => (
-                      <div
-                        key={permission}
-                        className="p-3 bg-primary/10 border border-primary/20 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {permission
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
-                          </span>
+                  {/* Permissions Section */}
+                  <div className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-2xl border border-indigo-200/50 dark:border-indigo-700/30">
+                    <Label className="text-lg font-bold text-indigo-700 dark:text-indigo-300 mb-4 flex items-center gap-2">
+                      🔐 Permissions ({(viewingRole?.permissions || []).length})
+                    </Label>
+                    {(viewingRole?.permissions || []).length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {(viewingRole?.permissions || []).map((permission) => (
+                          <div
+                            key={permission.name}
+                            className="p-3 bg-white/70 dark:bg-gray-800/70 border border-indigo-200/50 dark:border-indigo-700/30 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {permission.name
+                                  .replace(/_/g, " ")
+                                  .replace(/\b\w/g, (l: string) =>
+                                    l.toUpperCase()
+                                  )}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 bg-white/50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-indigo-200 dark:border-indigo-700">
+                        <div className="mx-auto h-12 w-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-3">
+                          <Shield className="h-6 w-6 text-indigo-400" />
                         </div>
+                        <p className="font-medium mb-1">
+                          No Permissions Assigned
+                        </p>
+                        <p className="text-sm">
+                          This role doesn't have any permissions yet
+                        </p>
                       </div>
-                    ))}
+                    )}
                   </div>
-                  {viewingRole.permissions.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      <Shield className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                      <p>No permissions assigned to this role</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
-            <DialogFooter>
+                  {/* Email Domain Rules Section */}
+                  <div className="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl border border-emerald-200/50 dark:border-emerald-700/30">
+                    <Label className="text-lg font-bold text-emerald-700 dark:text-emerald-300 mb-4 flex items-center gap-2">
+                      🌐 Email Domain Rules (
+                      {viewingRole.emailDomainRules?.length || 0})
+                    </Label>
+                    {viewingRole.emailDomainRules &&
+                    viewingRole.emailDomainRules.length > 0 ? (
+                      <div className="space-y-3">
+                        {viewingRole.emailDomainRules.map((rule, index) => (
+                          <div
+                            key={index}
+                            className="p-4 bg-white/70 dark:bg-gray-800/70 border border-emerald-200/50 dark:border-emerald-700/30 rounded-xl"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                  <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                                    Rule {index + 1}
+                                  </span>
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-200"
+                                  >
+                                    Priority: {rule.priority}
+                                  </Badge>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                      Pattern:
+                                    </span>
+                                    <code className="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-emerald-700 dark:text-emerald-300 font-mono">
+                                      {rule.domainPattern}
+                                    </code>
+                                  </div>
+                                  {rule.description && (
+                                    <div className="flex items-start gap-2">
+                                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                                        Description:
+                                      </span>
+                                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                                        {rule.description}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                  Active
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 bg-white/50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-emerald-200 dark:border-emerald-700">
+                        <div className="mx-auto h-12 w-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mb-3">
+                          <span className="text-2xl">🌐</span>
+                        </div>
+                        <p className="font-medium mb-1">
+                          No Email Domain Rules
+                        </p>
+                        <p className="text-sm">
+                          This role doesn't have automatic email-based
+                          assignment rules
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
               <Button
                 variant="outline"
                 onClick={() => setIsViewDialogOpen(false)}
+                className="flex-1 sm:flex-none"
               >
                 Close
               </Button>
@@ -1291,6 +1858,7 @@ export default function RolesPage() {
                     setIsViewDialogOpen(false);
                     openEditDialog(viewingRole);
                   }}
+                  className="flex-1 sm:flex-none bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Role

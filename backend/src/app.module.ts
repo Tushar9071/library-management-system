@@ -9,10 +9,12 @@ import { UserRoleModule } from './user-role/user-role.module';
 import { BooksModule } from './books/books.module';
 import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
+import { FirebaseModule } from './common/firebase/firebase.module';
 import { TestModule } from './test/test.module';
 import { AdminModule } from './admin/admin.module';
 import { JwtMiddleware } from './auth/jwt.middleware';
 import { JwtModule } from '@nestjs/jwt';
+import { BorrowsModule } from './borrows/borrows.module';
 @Module({
   imports: [
     CsvModule,
@@ -23,8 +25,10 @@ import { JwtModule } from '@nestjs/jwt';
     BooksModule,
     RolesModule,
     PermissionsModule,
+    FirebaseModule,
     TestModule,
     AdminModule,
+  BorrowsModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },

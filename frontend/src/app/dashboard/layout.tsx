@@ -23,6 +23,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { logOut } from "@/hooks/auth.hooks";
+import { useHasPermission } from "@/hooks/usePermissions";
+import { useAuthSync } from "@/hooks/useAuthSync";
+import { userStore } from "@/store/useUserRoleStore";
 
 export default function DashboardLayout({
   children,
@@ -33,18 +36,167 @@ export default function DashboardLayout({
   const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();
 
+  // Sync authentication state
+  useAuthSync();
+
+  // Get user info for debugging
+  const { id: userId, email, role, name } = userStore();
+
+  // Sync authentication state
+  useAuthSync();
+
+  // Permission checks
+  const hasReadBooks = useHasPermission("READ_BOOKS");
+  const hasCreateBooks = useHasPermission("CREATE_BOOKS");
+  const hasUpdateBooks = useHasPermission("UPDATE_BOOKS");
+  const hasReadUsers = useHasPermission("READ_USERS");
+  const hasCreateUsers = useHasPermission("CREATE_USERS");
+  const hasReadRoles = useHasPermission("READ_ROLES");
+  const hasManageSettings = useHasPermission("MANAGE_PERMISSIONS");
+  const hasBorrowBooks = useHasPermission("BORROW_BOOKS");
+
+  // Check if user is admin (has create/update permissions, but not just read)
+  const isAdmin = hasCreateBooks || hasUpdateBooks || hasCreateUsers;
+
+  // Debug log to check permissions
+  useEffect(() => {
+    console.log("=== PERMISSION DEBUG ===");
+    console.log("Current user:", { userId, email, role, name });
+    console.log("Current permissions:", {
+      hasReadBooks,
+      hasCreateBooks,
+      hasUpdateBooks,
+      hasReadUsers,
+      hasCreateUsers,
+      hasReadRoles,
+      hasManageSettings,
+      hasBorrowBooks,
+      isAdmin,
+    });
+    console.log("Navigation items that will be shown:", getFilteredNavItems());
+    console.log("========================");
+  }, [
+    userId,
+    email,
+    role,
+    name,
+    hasReadBooks,
+    hasCreateBooks,
+    hasUpdateBooks,
+    hasReadUsers,
+    hasCreateUsers,
+    hasReadRoles,
+    hasManageSettings,
+    hasBorrowBooks,
+    isAdmin,
+  ]);
+
   // Ensure this only runs on the client
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const navItems = [
-    { href: "/dashboard", icon: Home, label: "Dashboard" },
-    { href: "/dashboard/books", icon: BookOpen, label: "Manage Books" },
-    { href: "/dashboard/users", icon: Users, label: "Manage Users" },
-    { href: "/dashboard/roles", icon: Shield, label: "Manage Roles" },
-    { href: "/dashboard/settings", icon: Settings, label: "Settings" },
-  ];
+  // Filter navigation items based on permissions
+  const getFilteredNavItems = () => {
+    const allNavItems: Array<{
+      href: string;
+      icon: any;
+      label: string;
+      permission: string | null;
+    }> = [
+      { href: "/dashboard", icon: Home, label: "Dashboard", permission: null }, // Always show dashboard
+    ];
+
+    // Add books section
+    if (hasReadBooks) {
+      if (isAdmin) {
+        // Show management interface for admins
+        allNavItems.push({
+          href: "/dashboard/books",
+          icon: BookOpen,
+          label: "Manage Books",
+          permission: "READ_BOOKS",
+        });
+      } else {
+        // Show browse interface for students/regular users
+        allNavItems.push({
+          href: "/dashboard/books",
+          icon: BookOpen,
+          label: "Browse Books",
+          permission: "READ_BOOKS",
+        });
+      }
+    }
+
+    // Add borrowing features for all users who can borrow
+    if (hasBorrowBooks) {
+      allNavItems.push(
+        {
+          href: "/dashboard/my-books",
+          icon: BookOpen,
+          label: "My Books",
+          permission: "BORROW_BOOKS",
+        },
+        {
+          href: "/dashboard/borrowed",
+          icon: BookOpen,
+          label: "Borrowed Books",
+          permission: "BORROW_BOOKS",
+        }
+      );
+    }
+
+    // Admin-only sections
+    if (hasReadUsers) {
+      allNavItems.push({
+        href: "/dashboard/users",
+        icon: Users,
+        label: "Manage Users",
+        permission: "READ_USERS",
+      });
+    }
+
+    if (hasReadRoles) {
+      allNavItems.push({
+        href: "/dashboard/roles",
+        icon: Shield,
+        label: "Manage Roles",
+        permission: "READ_ROLES",
+      });
+    }
+
+    if (hasManageSettings) {
+      allNavItems.push({
+        href: "/dashboard/settings",
+        icon: Settings,
+        label: "Settings",
+        permission: "MANAGE_PERMISSIONS",
+      });
+    }
+
+    return allNavItems.filter((item) => {
+      // Always show items without permission requirements
+      if (!item.permission) return true;
+
+      // Check specific permissions
+      switch (item.permission) {
+        case "READ_BOOKS":
+          return hasReadBooks;
+        case "BORROW_BOOKS":
+          return hasBorrowBooks;
+        case "READ_USERS":
+          return hasReadUsers;
+        case "READ_ROLES":
+          return hasReadRoles;
+        case "MANAGE_PERMISSIONS":
+          return hasManageSettings;
+        default:
+          return false;
+      }
+    });
+  };
+
+  const navItems = getFilteredNavItems();
 
   // Don't render navigation links until client-side hydration is complete
   if (!isClient) {

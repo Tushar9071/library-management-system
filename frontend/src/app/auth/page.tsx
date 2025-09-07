@@ -128,7 +128,7 @@ export default function LibraryAuth() {
 
     try {
       // Use the new auth utility
-      const { loginUser } = await import('@/lib/api');
+      const { loginUser } = await import("@/lib/api");
       const result = await loginUser(email as string, password as string);
 
       if (result.success) {

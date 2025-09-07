@@ -1,10 +1,14 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from 'src/db/prisma/prisma.service';
+import { EnhancedRolesService } from '../roles/enhanced-roles.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private enhancedRolesService: EnhancedRolesService,
+  ) {}
 
   async createUser(email: string, password: string, info: any) {
     const existingUser = await this.prisma.users.findUnique({
@@ -16,21 +20,34 @@ export class UsersService {
 
     const hash = await bcrypt.hash(password, 10);
 
-    // Determine role based on email domain
-    let role;
-    if (email.endsWith('@darshan.ac.in')) {
-      role = await this.prisma.userRole.findFirst({
-        where: { role: 'Student' },
-      });
-    } else {
-      role = await this.prisma.userRole.findFirst({
+    // Use dynamic role assignment based on email domain rules
+    let roleId = await this.enhancedRolesService.assignRoleByEmailDomain(email);
+
+    // If no role matches email domain rules, assign default "public user" role
+    if (!roleId) {
+      const publicRole = await this.prisma.userRole.findFirst({
         where: { role: 'public user' },
       });
+
+      if (!publicRole) {
+        throw new BadRequestException(
+          'Default "public user" role not found. Please ensure it exists in the database.',
+        );
+      }
+
+      roleId = publicRole.id;
+      console.log(
+        `No email domain rules matched for ${email}, assigned default "public user" role (ID: ${roleId})`,
+      );
+    } else {
+      const assignedRole = await this.prisma.userRole.findUnique({
+        where: { id: roleId },
+      });
+      console.log(
+        `Email domain rule matched for ${email}, assigned "${assignedRole?.role}" role (ID: ${roleId})`,
+      );
     }
 
-    if (!role) {
-      throw new BadRequestException(`Role not found`);
-    }
     const birthDateString = info.dob; // e.g. "2006-07-07"
     const dob = birthDateString ? new Date(birthDateString) : null;
 
@@ -47,7 +64,7 @@ export class UsersService {
             phone: info.phone,
             gender: info.gender,
             dob: birthDateString,
-            roleId: role.id,
+            roleId: roleId,
           },
         },
       },

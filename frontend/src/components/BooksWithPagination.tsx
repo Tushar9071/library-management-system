@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 interface Book {
   id: string;
@@ -57,11 +58,27 @@ const BooksWithPagination: React.FC = () => {
     }
   };
 
+  const handleBorrow = async (bookMasterId: string) => {
+    try {
+      const res = await apiPost(`/borrows/${bookMasterId}`, {});
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Borrowed. Due: ${new Date(data.data?.dueDate).toLocaleDateString()}`);
+        fetchBooks();
+      } else {
+        toast.error(data.message || "Borrow failed");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Borrow failed");
+    }
+  };
+
   const fetchCategories = async () => {
     try {
       const response = await apiGet("/books/categories");
       const data = await response.json();
-      
+
       if (response.ok) {
         setCategories(data.data);
       } else {
@@ -228,6 +245,16 @@ const BooksWithPagination: React.FC = () => {
                     {book.availableCopies}/{book.totalCopies} available
                   </span>
                 </div>
+                {book.status === "available" && (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => handleBorrow(book.id)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Borrow
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

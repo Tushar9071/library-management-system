@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Query,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PermissionGuard } from '../auth/permission.guard';
@@ -17,6 +18,35 @@ import { RequirePermissions } from '../auth/permissions.decorator';
 @UseGuards(PermissionGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('me')
+  // No @RequirePermissions decorator - any authenticated user can access
+  async getCurrentUser(@Request() req: any) {
+    // Try multiple ways to get the user ID
+    const userId = req.userId || req.user?.sub || req.user?.id;
+
+    console.log('=== /me endpoint debug ===');
+    console.log('req.userId:', req.userId);
+    console.log('req.user?.sub:', req.user?.sub);
+    console.log('req.user?.id:', req.user?.id);
+    console.log('Final userId:', userId);
+    console.log('req.user full object:', req.user);
+
+    if (!userId) {
+      return {
+        message: 'User not authenticated',
+        data: null,
+      };
+    }
+
+    const user = await this.usersService.findById(userId);
+    console.log('Found user:', user);
+
+    return {
+      message: 'Current user retrieved successfully',
+      data: user,
+    };
+  }
 
   @Get()
   @RequirePermissions('READ_USERS')

@@ -1,4 +1,10 @@
-import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { PrismaService } from '../db/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
@@ -7,7 +13,9 @@ export class AdminController {
   constructor(private prisma: PrismaService) {}
 
   @Post('initialize')
-  async initializeAdmin(@Body() body: { email: string; password: string; name: string }) {
+  async initializeAdmin(
+    @Body() body: { email: string; password: string; name: string },
+  ) {
     const { email, password, name } = body;
 
     try {
@@ -17,7 +25,10 @@ export class AdminController {
       });
 
       if (existingUser) {
-        throw new HttpException('Admin user already exists', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Admin user already exists',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Hash the password
@@ -25,21 +36,96 @@ export class AdminController {
 
       // Create all permissions first
       const permissions = [
-        { name: 'CREATE_USERS', description: 'Create new users', category: 'users', action: 'create' },
-        { name: 'READ_USERS', description: 'View user information', category: 'users', action: 'read' },
-        { name: 'UPDATE_USERS', description: 'Update user information', category: 'users', action: 'update' },
-        { name: 'DELETE_USERS', description: 'Delete users', category: 'users', action: 'delete' },
-        { name: 'CREATE_ROLES', description: 'Create new roles', category: 'roles', action: 'create' },
-        { name: 'READ_ROLES', description: 'View roles', category: 'roles', action: 'read' },
-        { name: 'UPDATE_ROLES', description: 'Update roles', category: 'roles', action: 'update' },
-        { name: 'DELETE_ROLES', description: 'Delete roles', category: 'roles', action: 'delete' },
-        { name: 'CREATE_BOOKS', description: 'Create new books', category: 'books', action: 'create' },
-        { name: 'READ_BOOKS', description: 'View books', category: 'books', action: 'read' },
-        { name: 'UPDATE_BOOKS', description: 'Update books', category: 'books', action: 'update' },
-        { name: 'DELETE_BOOKS', description: 'Delete books', category: 'books', action: 'delete' },
-        { name: 'PERMISSION_MANAGE', description: 'Manage permissions', category: 'system', action: 'manage' },
-        { name: 'ADMIN_ACCESS', description: 'Full admin access', category: 'system', action: 'admin' },
-        { name: 'SYSTEM_MANAGE', description: 'Manage system settings', category: 'system', action: 'manage' },
+        {
+          name: 'CREATE_USERS',
+          description: 'Create new users',
+          category: 'users',
+          action: 'create',
+        },
+        {
+          name: 'READ_USERS',
+          description: 'View user information',
+          category: 'users',
+          action: 'read',
+        },
+        {
+          name: 'UPDATE_USERS',
+          description: 'Update user information',
+          category: 'users',
+          action: 'update',
+        },
+        {
+          name: 'DELETE_USERS',
+          description: 'Delete users',
+          category: 'users',
+          action: 'delete',
+        },
+        {
+          name: 'CREATE_ROLES',
+          description: 'Create new roles',
+          category: 'roles',
+          action: 'create',
+        },
+        {
+          name: 'READ_ROLES',
+          description: 'View roles',
+          category: 'roles',
+          action: 'read',
+        },
+        {
+          name: 'UPDATE_ROLES',
+          description: 'Update roles',
+          category: 'roles',
+          action: 'update',
+        },
+        {
+          name: 'DELETE_ROLES',
+          description: 'Delete roles',
+          category: 'roles',
+          action: 'delete',
+        },
+        {
+          name: 'CREATE_BOOKS',
+          description: 'Create new books',
+          category: 'books',
+          action: 'create',
+        },
+        {
+          name: 'READ_BOOKS',
+          description: 'View books',
+          category: 'books',
+          action: 'read',
+        },
+        {
+          name: 'UPDATE_BOOKS',
+          description: 'Update books',
+          category: 'books',
+          action: 'update',
+        },
+        {
+          name: 'DELETE_BOOKS',
+          description: 'Delete books',
+          category: 'books',
+          action: 'delete',
+        },
+        {
+          name: 'PERMISSION_MANAGE',
+          description: 'Manage permissions',
+          category: 'system',
+          action: 'manage',
+        },
+        {
+          name: 'ADMIN_ACCESS',
+          description: 'Full admin access',
+          category: 'system',
+          action: 'admin',
+        },
+        {
+          name: 'SYSTEM_MANAGE',
+          description: 'Manage system settings',
+          category: 'system',
+          action: 'manage',
+        },
       ];
 
       // Create permissions (skip if already exist)
@@ -126,8 +212,8 @@ export class AdminController {
       const adminUsers = await this.prisma.userInfo.findMany({
         where: {
           role: {
-            role: 'Admin'
-          }
+            role: 'Admin',
+          },
         },
         include: {
           user: true,
@@ -151,7 +237,7 @@ export class AdminController {
       }
 
       const adminUser = adminUsers[0];
-      
+
       return {
         setupComplete: true,
         message: 'Admin setup complete',
@@ -164,7 +250,10 @@ export class AdminController {
       };
     } catch (error) {
       console.error('Error checking setup:', error);
-      throw new HttpException('Failed to check setup', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Failed to check setup',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

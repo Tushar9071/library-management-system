@@ -2,9 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
-import { ProtectedFeature, ProtectedAction } from "@/components/ProtectedFeature";
-import { useResourcePermissions, useHasPermission } from "@/hooks/usePermissions";
+import {
+  ProtectedFeature,
+  ProtectedAction,
+} from "@/components/ProtectedFeature";
+import {
+  useResourcePermissions,
+  useHasPermission,
+} from "@/hooks/usePermissions";
 import { PERMISSIONS } from "@/types/permissions";
+import BooksWithPagination from "@/components/BooksWithPagination";
 import {
   Table,
   TableBody,
@@ -81,9 +88,16 @@ interface Pagination {
   hasPrev: boolean;
 }
 
-import { PermissionDebug } from "@/components/PermissionDebug";
-
 export default function BooksPage() {
+  // Lightweight gate: if user is not an admin (no create/update permissions), show browse view
+  const canCreateBooks = useHasPermission("CREATE_BOOKS");
+  const canUpdateBooks = useHasPermission("UPDATE_BOOKS");
+  const isAdminView = canCreateBooks || canUpdateBooks;
+
+  if (!isAdminView) {
+    return <BooksWithPagination />;
+  }
+
   const [books, setBooks] = useState<Book[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
@@ -423,9 +437,6 @@ export default function BooksPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900 p-6">
-      {/* Debug Component - Remove this later */}
-      <PermissionDebug />
-      
       {/* Animated Header */}
       <div className="flex flex-col gap-4 mb-8">
         <div className="space-y-2">
@@ -892,189 +903,187 @@ export default function BooksPage() {
         </ProtectedAction>
 
         {/* Enhanced Search and Filter Controls */}
-          <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-slide-up">
-            <CardContent className="p-6">
-              <form onSubmit={handleSearch} className="space-y-6">
-                <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4">
-                  <div className="flex-1 relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <BookOpen className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                    </div>
-                    <Input
-                      type="text"
-                      placeholder="🔍 Search books by title, author, or description..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300 hover:shadow-md"
-                    />
+        <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-xl rounded-2xl animate-slide-up">
+          <CardContent className="p-6">
+            <form onSubmit={handleSearch} className="space-y-6">
+              <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4">
+                <div className="flex-1 relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <BookOpen className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-300" />
                   </div>
+                  <Input
+                    type="text"
+                    placeholder="🔍 Search books by title, author, or description..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all duration-300 hover:shadow-md"
+                  />
+                </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                    <Select
-                      value={selectedCategory}
-                      onValueChange={handleCategoryChange}
-                    >
-                      <SelectTrigger className="w-full sm:w-56 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-purple-400 focus:border-purple-500 transition-all duration-300">
-                        <SelectValue placeholder="📂 All Categories" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm max-h-80 w-72">
-                        {/* Category Search */}
-                        <div className="p-3 border-b border-gray-200 dark:border-gray-600">
-                          <div className="relative">
-                            <Input
-                              placeholder="🔍 Search categories..."
-                              value={categorySearchTerm}
-                              onChange={(e) =>
-                                handleCategorySearch(e.target.value)
-                              }
-                              className="h-8 text-sm bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded-lg focus:border-purple-500"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                          {hasMoreCategories && (
-                            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
-                              <span>
-                                Showing {visibleCategoryCount} of{" "}
-                                {filteredCategories.length} categories
-                              </span>
-                            </div>
-                          )}
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={handleCategoryChange}
+                  >
+                    <SelectTrigger className="w-full sm:w-56 h-12 bg-white/80 dark:bg-gray-700/80 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-purple-400 focus:border-purple-500 transition-all duration-300">
+                      <SelectValue placeholder="📂 All Categories" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-0 shadow-2xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm max-h-80 w-72">
+                      {/* Category Search */}
+                      <div className="p-3 border-b border-gray-200 dark:border-gray-600">
+                        <div className="relative">
+                          <Input
+                            placeholder="🔍 Search categories..."
+                            value={categorySearchTerm}
+                            onChange={(e) =>
+                              handleCategorySearch(e.target.value)
+                            }
+                            className="h-8 text-sm bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded-lg focus:border-purple-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </div>
+                        {hasMoreCategories && (
+                          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                            <span>
+                              Showing {visibleCategoryCount} of{" "}
+                              {filteredCategories.length} categories
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                        {/* All Categories Option */}
-                        <SelectItem
-                          value="all"
-                          className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50 font-medium"
-                        >
-                          📚 All Categories
-                        </SelectItem>
+                      {/* All Categories Option */}
+                      <SelectItem
+                        value="all"
+                        className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50 font-medium"
+                      >
+                        📚 All Categories
+                      </SelectItem>
 
-                        {/* Loading State */}
-                        {(isLoadingCategories || isAutoLoadingCategories) && (
-                          <div className="p-3 text-center">
-                            <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                              {isAutoLoadingCategories
-                                ? "Loading more..."
-                                : "Loading categories..."}
-                            </div>
+                      {/* Loading State */}
+                      {(isLoadingCategories || isAutoLoadingCategories) && (
+                        <div className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            {isAutoLoadingCategories
+                              ? "Loading more..."
+                              : "Loading categories..."}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Categories List */}
+                      {!isLoadingCategories &&
+                        visibleCategories.length > 0 &&
+                        visibleCategories.map((category, index) => (
+                          <SelectItem
+                            key={category}
+                            value={category}
+                            className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
+                            ref={
+                              index === visibleCategories.length - 3 &&
+                              hasMoreCategories
+                                ? setCategoryScrollRef
+                                : null
+                            }
+                          >
+                            📖 {category}
+                          </SelectItem>
+                        ))}
+
+                      {/* Auto-scroll Trigger Element (invisible) */}
+                      {hasMoreCategories &&
+                        !isLoadingCategories &&
+                        visibleCategories.length > 5 && (
+                          <div
+                            ref={setCategoryScrollRef}
+                            className="h-1 w-full opacity-0"
+                            aria-hidden="true"
+                          />
+                        )}
+
+                      {/* No Results */}
+                      {!isLoadingCategories &&
+                        visibleCategories.length === 0 &&
+                        categorySearchTerm && (
+                          <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
+                            No categories found for "{categorySearchTerm}"
                           </div>
                         )}
 
-                        {/* Categories List */}
-                        {!isLoadingCategories &&
-                          visibleCategories.length > 0 &&
-                          visibleCategories.map((category, index) => (
-                            <SelectItem
-                              key={category}
-                              value={category}
-                              className="rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/50"
-                              ref={
-                                index === visibleCategories.length - 3 &&
-                                hasMoreCategories
-                                  ? setCategoryScrollRef
-                                  : null
-                              }
-                            >
-                              📖 {category}
-                            </SelectItem>
-                          ))}
-
-                        {/* Auto-scroll Trigger Element (invisible) */}
-                        {hasMoreCategories &&
-                          !isLoadingCategories &&
-                          visibleCategories.length > 5 && (
-                            <div
-                              ref={setCategoryScrollRef}
-                              className="h-1 w-full opacity-0"
-                              aria-hidden="true"
-                            />
-                          )}
-
-                        {/* No Results */}
-                        {!isLoadingCategories &&
-                          visibleCategories.length === 0 &&
-                          categorySearchTerm && (
-                            <div className="p-3 text-center text-sm text-gray-500 dark:text-gray-400">
-                              No categories found for "{categorySearchTerm}"
-                            </div>
-                          )}
-
-                        {/* Load More Button for manual loading */}
-                        {!isLoadingCategories &&
-                          !isAutoLoadingCategories &&
-                          hasMoreCategories && (
-                            <div className="p-2 border-t border-gray-200 dark:border-gray-600">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-full text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-all duration-300"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  loadMoreCategories();
-                                }}
-                              >
-                                📂 Load More Categories (
-                                {filteredCategories.length -
-                                  visibleCategoryCount}{" "}
-                                remaining)
-                              </Button>
-                            </div>
-                          )}
-
-                        {/* Auto-scroll Indicator */}
-                        {!isLoadingCategories && hasMoreCategories && (
+                      {/* Load More Button for manual loading */}
+                      {!isLoadingCategories &&
+                        !isAutoLoadingCategories &&
+                        hasMoreCategories && (
                           <div className="p-2 border-t border-gray-200 dark:border-gray-600">
-                            <div className="text-xs text-center text-gray-500 dark:text-gray-400">
-                              💡 Scroll down for more categories
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/50 transition-all duration-300"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                loadMoreCategories();
+                              }}
+                            >
+                              📂 Load More Categories (
+                              {filteredCategories.length - visibleCategoryCount}{" "}
+                              remaining)
+                            </Button>
                           </div>
                         )}
-                      </SelectContent>
-                    </Select>
 
-                    <Button
-                      type="submit"
-                      className="w-full sm:w-auto h-12 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      ✨ Search
-                    </Button>
-                  </div>
+                      {/* Auto-scroll Indicator */}
+                      {!isLoadingCategories && hasMoreCategories && (
+                        <div className="p-2 border-t border-gray-200 dark:border-gray-600">
+                          <div className="text-xs text-center text-gray-500 dark:text-gray-400">
+                            💡 Scroll down for more categories
+                          </div>
+                        </div>
+                      )}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    type="submit"
+                    className="w-full sm:w-auto h-12 px-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                  >
+                    ✨ Search
+                  </Button>
                 </div>
-              </form>
+              </div>
+            </form>
 
-              {/* Enhanced Results Summary */}
-              {pagination && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
-                  <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
-                    <span className="flex items-center gap-1">
-                      📊 Showing {(pagination.page - 1) * pagination.limit + 1}{" "}
-                      to{" "}
-                      {Math.min(
-                        pagination.page * pagination.limit,
-                        pagination.totalCount
-                      )}{" "}
-                      of{" "}
-                      <span className="font-bold text-blue-600 dark:text-blue-400">
-                        {pagination.totalCount}
-                      </span>{" "}
-                      books
+            {/* Enhanced Results Summary */}
+            {pagination && (
+              <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <span className="flex items-center gap-1">
+                    📊 Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+                    {Math.min(
+                      pagination.page * pagination.limit,
+                      pagination.totalCount
+                    )}{" "}
+                    of{" "}
+                    <span className="font-bold text-blue-600 dark:text-blue-400">
+                      {pagination.totalCount}
+                    </span>{" "}
+                    books
+                  </span>
+                  {searchTerm && (
+                    <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-medium">
+                      🔍 "{searchTerm}"
                     </span>
-                    {searchTerm && (
-                      <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded-full text-xs font-medium">
-                        🔍 "{searchTerm}"
-                      </span>
-                    )}
-                    {selectedCategory !== "all" && (
-                      <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
-                        📂 {selectedCategory}
-                      </span>
-                    )}
-                  </div>
+                  )}
+                  {selectedCategory !== "all" && (
+                    <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                      📂 {selectedCategory}
+                    </span>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Enhanced Books Display */}
         <Card className="backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 border-0 shadow-2xl rounded-2xl overflow-hidden animate-fade-in">
@@ -1264,32 +1273,32 @@ export default function BooksPage() {
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
-                              <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="text-xl font-bold text-red-600">
-                                    🗑️ Delete Book
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
-                                    Are you sure you want to delete{" "}
-                                    <span className="font-semibold text-gray-900 dark:text-white">
-                                      "{book.title}"
-                                    </span>
-                                    ? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="rounded-xl">
-                                    Cancel
-                                  </AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteBook(book.id)}
-                                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
-                                  >
-                                    Delete Book
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="text-xl font-bold text-red-600">
+                                      🗑️ Delete Book
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
+                                      Are you sure you want to delete{" "}
+                                      <span className="font-semibold text-gray-900 dark:text-white">
+                                        "{book.title}"
+                                      </span>
+                                      ? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel className="rounded-xl">
+                                      Cancel
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteBook(book.id)}
+                                      className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
+                                    >
+                                      Delete Book
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </ProtectedAction>
                           </div>
                         </TableCell>
@@ -1378,34 +1387,34 @@ export default function BooksPage() {
                                   className="bg-red-500/20 hover:bg-red-500/30 border-red-300/30 text-white hover:scale-110 transition-all duration-300 rounded-xl"
                                 >
                                   <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="text-xl font-bold text-red-600">
-                                  🗑️ Delete Book
-                                </AlertDialogTitle>
-                                <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
-                                  Are you sure you want to delete{" "}
-                                  <span className="font-semibold text-gray-900 dark:text-white">
-                                    "{book.title}"
-                                  </span>
-                                  ? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel className="rounded-xl">
-                                  Cancel
-                                </AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteBook(book.id)}
-                                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
-                                >
-                                  Delete Book
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="rounded-2xl border-0 shadow-2xl">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-xl font-bold text-red-600">
+                                    🗑️ Delete Book
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
+                                    Are you sure you want to delete{" "}
+                                    <span className="font-semibold text-gray-900 dark:text-white">
+                                      "{book.title}"
+                                    </span>
+                                    ? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="rounded-xl">
+                                    Cancel
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteBook(book.id)}
+                                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
+                                  >
+                                    Delete Book
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </ProtectedAction>
                         </div>
                       </div>

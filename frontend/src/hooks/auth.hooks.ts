@@ -2,15 +2,15 @@ import toast from "react-hot-toast";
 
 export const logOut = async () => {
   try {
-    const response = await fetch("/api/auth/logout", {
+    const response = await fetch("http://localhost:8000/api/auth/logout", {
       method: "POST",
       credentials: "include", // Important for handling cookies
     });
 
     if (response.ok) {
       // Clear all authentication data
-      localStorage.removeItem('userData');
-      localStorage.removeItem('authToken');
+      localStorage.removeItem("userData");
+      localStorage.removeItem("authToken");
       localStorage.clear();
       window.location.href = "/auth";
     } else {

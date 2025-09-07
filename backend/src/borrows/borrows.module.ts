@@ -1,25 +1,24 @@
 import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { JwtModule } from '@nestjs/jwt';
+import { BorrowsService } from './borrows.service';
+import { BorrowsController } from './borrows.controller';
 import { PrismaModule } from '../db/prisma/prisma.module';
 import { PermissionsModule } from '../permissions/permissions.module';
-import { RolesModule } from '../roles/roles.module';
+import { AuthModule } from '../auth/auth.module';
 import { FirebaseModule } from '../common/firebase/firebase.module';
-import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
     PrismaModule,
     PermissionsModule,
-    RolesModule,
+    AuthModule,
     FirebaseModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  controllers: [UsersController],
-  providers: [UsersService],
-  exports: [UsersService],
+  controllers: [BorrowsController],
+  providers: [BorrowsService],
 })
-export class UsersModule {}
+export class BorrowsModule {}

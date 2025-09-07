@@ -26,11 +26,6 @@ export const apiRequest = async (
     // Try to get token from either 'authToken' or 'token' in localStorage
     const token =
       localStorage.getItem("authToken") || localStorage.getItem("token");
-    console.log("Token found:", token ? "YES" : "NO");
-    console.log(
-      "Token value:",
-      token ? token.substring(0, 20) + "..." : "none"
-    );
 
     if (token && token !== "null" && token !== "undefined") {
       config.headers = {
@@ -105,27 +100,31 @@ export const loginUser = async (email: string, password: string) => {
     const response = await apiPost("/auth/login", { email, password }, false);
     const result = await response.json();
 
-    if (response.ok && result.token) {
-      // Store authentication data
-      localStorage.setItem("authToken", result.token);
-      
-      // Store user data if provided
-      if (result.user) {
-        const userData = {
-          id: result.user.id,
-          email: result.user.email,
-          name: result.user.name,
-          role: result.user.role || "public user",
-        };
-        localStorage.setItem("userData", JSON.stringify(userData));
-        
-        // Update user store
-        const { userStore } = await import("@/store/useUserRoleStore");
-        userStore.setState(userData);
-      }
+    console.log("Backend login response:", result);
 
-      return { success: true, data: result };
+    if (response.ok && result.data && result.data.token) {
+      // Store authentication data
+      localStorage.setItem("authToken", result.data.token);
+
+      // Store user data
+      const userData = {
+        id: result.data.id,
+        email: result.data.email,
+        name: result.data.name,
+        role: result.data.role || "public user",
+      };
+      localStorage.setItem("userData", JSON.stringify(userData));
+
+      console.log("Stored user data:", userData);
+      console.log("Stored token:", result.data.token);
+
+      // Update user store
+      const { userStore } = await import("@/store/useUserRoleStore");
+      userStore.setState(userData);
+
+      return { success: true, data: result.data };
     } else {
+      console.error("Login failed - invalid response:", result);
       return { success: false, error: result.message || "Login failed" };
     }
   } catch (error) {

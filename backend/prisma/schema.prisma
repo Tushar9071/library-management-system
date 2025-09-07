@@ -57,26 +57,47 @@ model userInfo {
 }
 
 model userRole {
-  id          Int               @id @default(autoincrement())
-  role        String            @unique
-  visibility  Boolean           @default(true)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id          Int      @id @default(autoincrement())
+  role        String   @unique
+  description String?
+  // Borrowing policy per role
+  maxBorrowDays    Int      @default(15)  // Max days a book can be borrowed
+  dailyFine        Float    @default(5.0) // Fine per overdue day
+  maxActiveBorrows Int      @default(3)   // Max number of active borrows
+  visibility  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   userinfo    userInfo[]
   permissions RolePermission[]
+  emailRules  EmailDomainRule[]
 
   @@map("userrole")
 }
 
+model EmailDomainRule {
+  id            Int      @id @default(autoincrement())
+  roleId        Int
+  domainPattern String // Email domain pattern like "@darshan.ac.in" or regex
+  description   String?
+  isActive      Boolean  @default(true)
+  priority      Int      @default(0) // Higher priority rules are checked first
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  role userRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@map("email_domain_rules")
+}
+
 model Permission {
-  id          Int               @id @default(autoincrement())
-  name        String            @unique
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
   description String?
-  category    String            // e.g., "books", "users", "roles"
-  action      String            // e.g., "read", "create", "update", "delete"
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  category    String // e.g., "books", "users", "roles"
+  action      String // e.g., "read", "create", "update", "delete"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   rolePermissions RolePermission[]
 
@@ -84,11 +105,11 @@ model Permission {
 }
 
 model RolePermission {
-  id           Int        @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   roleId       Int
   permissionId Int
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   role       userRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)

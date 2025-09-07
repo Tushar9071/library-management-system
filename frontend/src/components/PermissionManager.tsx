@@ -32,29 +32,29 @@ export function PermissionManager({ roleId, onClose }: PermissionManagerProps) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch all permissions
-      const permissionsResponse = await fetch('/api/permissions', {
-        credentials: 'include',
+      const permissionsResponse = await fetch("/api/permissions", {
+        credentials: "include",
       });
-      
+
       // Fetch role permissions
       const roleResponse = await fetch(`/api/permissions/role/${roleId}`, {
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (permissionsResponse.ok && roleResponse.ok) {
         const allPerms = await permissionsResponse.json();
         const rolePerms = await roleResponse.json();
-        
+
         setAllPermissions(allPerms);
         setSelectedPermissions(rolePerms.map((p: Permission) => p.id));
       } else {
-        throw new Error('Failed to fetch permissions');
+        throw new Error("Failed to fetch permissions");
       }
     } catch (error) {
-      console.error('Error fetching permissions:', error);
-      toast.error('Failed to load permissions');
+      console.error("Error fetching permissions:", error);
+      toast.error("Failed to load permissions");
     } finally {
       setLoading(false);
     }
@@ -62,36 +62,38 @@ export function PermissionManager({ roleId, onClose }: PermissionManagerProps) {
 
   const handlePermissionChange = (permissionId: number, checked: boolean) => {
     if (checked) {
-      setSelectedPermissions(prev => [...prev, permissionId]);
+      setSelectedPermissions((prev) => [...prev, permissionId]);
     } else {
-      setSelectedPermissions(prev => prev.filter(id => id !== permissionId));
+      setSelectedPermissions((prev) =>
+        prev.filter((id) => id !== permissionId)
+      );
     }
   };
 
   const handleSave = async () => {
     try {
       setSaving(true);
-      
+
       const response = await fetch(`/api/permissions/role/${roleId}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           permissionIds: selectedPermissions,
         }),
-        credentials: 'include',
+        credentials: "include",
       });
 
       if (response.ok) {
-        toast.success('Permissions updated successfully');
+        toast.success("Permissions updated successfully");
         onClose();
       } else {
-        throw new Error('Failed to update permissions');
+        throw new Error("Failed to update permissions");
       }
     } catch (error) {
-      console.error('Error saving permissions:', error);
-      toast.error('Failed to save permissions');
+      console.error("Error saving permissions:", error);
+      toast.error("Failed to save permissions");
     } finally {
       setSaving(false);
     }
@@ -126,7 +128,7 @@ export function PermissionManager({ roleId, onClose }: PermissionManagerProps) {
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -142,12 +144,18 @@ export function PermissionManager({ roleId, onClose }: PermissionManagerProps) {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {permissions.map((permission) => (
-                  <div key={permission.id} className="flex items-center space-x-2">
+                  <div
+                    key={permission.id}
+                    className="flex items-center space-x-2"
+                  >
                     <Checkbox
                       id={`permission-${permission.id}`}
                       checked={selectedPermissions.includes(permission.id)}
                       onCheckedChange={(checked) =>
-                        handlePermissionChange(permission.id, checked as boolean)
+                        handlePermissionChange(
+                          permission.id,
+                          checked as boolean
+                        )
                       }
                     />
                     <label
@@ -156,9 +164,13 @@ export function PermissionManager({ roleId, onClose }: PermissionManagerProps) {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium">{permission.name.replace(/_/g, ' ')}</p>
+                          <p className="font-medium">
+                            {permission.name.replace(/_/g, " ")}
+                          </p>
                           {permission.description && (
-                            <p className="text-sm text-gray-500">{permission.description}</p>
+                            <p className="text-sm text-gray-500">
+                              {permission.description}
+                            </p>
                           )}
                         </div>
                         <Badge variant="outline" className="ml-2">
@@ -179,7 +191,7 @@ export function PermissionManager({ roleId, onClose }: PermissionManagerProps) {
           Cancel
         </Button>
         <Button onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>

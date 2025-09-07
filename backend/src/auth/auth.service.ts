@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/db/prisma/prisma.service';
 import { UsersService } from 'src/users/users.service';
+import { EnhancedRolesService } from '../roles/enhanced-roles.service';
+import { FirebaseService } from '../common/firebase/firebase.service';
 import * as bcrypt from 'bcrypt';
 @Injectable()
 export class AuthService {
@@ -9,6 +11,8 @@ export class AuthService {
     private jwtService: JwtService,
     private prisma: PrismaService,
     private usersService: UsersService,
+    private enhancedRolesService: EnhancedRolesService,
+    private firebaseService: FirebaseService,
   ) {}
 
   async validateUser(email: string, pass: string) {
@@ -65,179 +69,239 @@ export class AuthService {
     }
   }
 
-  async googleLogin(email: string, token: string) {
-    const user = await this.prisma.users.findUnique({
-      where: { email: email },
-      include: {
-        userInfoId: {
-          include: {
-            role: true,
+  async googleLogin(email: string, firebaseToken: string) {
+    try {
+      // Verify the Firebase token first
+      const decodedToken =
+        await this.firebaseService.verifyIdToken(firebaseToken);
+
+      // Make sure the email from token matches the provided email
+      if (decodedToken.email !== email) {
+        throw new Error('Email mismatch between token and provided email');
+      }
+
+      // Check if user already exists
+      const existingUser = await this.prisma.users.findUnique({
+        where: { email: email },
+        include: {
+          userInfoId: {
+            include: {
+              role: true,
+            },
           },
         },
-      },
-    });
-
-    if (user) {
-      // If user exists, update the token
-      await this.prisma.session.upsert({
-        where: { userId: user.id },
-        update: { token },
-        create: { userId: user.id, token },
       });
+
+      if (existingUser) {
+        // If user exists, update the token
+        await this.prisma.session.upsert({
+          where: { userId: existingUser.id },
+          update: { token: firebaseToken },
+          create: { userId: existingUser.id, token: firebaseToken },
+        });
+
+        return {
+          access_token: firebaseToken,
+          id: existingUser.id,
+          name: existingUser.userInfoId?.firstname || '',
+          email: existingUser.email,
+          role: existingUser.userInfoId?.role?.role || 'public user',
+        };
+      }
+
+      // Use dynamic role assignment based on email domain rules
+      let roleId =
+        await this.enhancedRolesService.assignRoleByEmailDomain(email);
+
+      // If no role matches email domain rules, assign default "public user" role
+      if (!roleId) {
+        const publicRole = await this.prisma.userRole.findFirst({
+          where: { role: 'public user' },
+        });
+
+        if (!publicRole) {
+          throw new Error(
+            'Default "public user" role not found. Please ensure it exists in the database.',
+          );
+        }
+
+        roleId = publicRole.id;
+        console.log(
+          `No email domain rules matched for ${email}, assigned default "public user" role (ID: ${roleId})`,
+        );
+      } else {
+        const assignedRole = await this.prisma.userRole.findUnique({
+          where: { id: roleId },
+        });
+        console.log(
+          `Email domain rule matched for ${email}, assigned "${assignedRole?.role}" role (ID: ${roleId})`,
+        );
+      }
+
+      // Extract name from Firebase token or email
+      const firstName =
+        decodedToken.name?.split(' ')[0] ||
+        email.split('@')[0].split('.')[0] ||
+        'User';
+      const lastName =
+        decodedToken.name?.split(' ').slice(1).join(' ') ||
+        email.split('@')[0].split('.')[1] ||
+        '';
+
+      // Create new user
+      const newUser = await this.prisma.users.create({
+        data: {
+          email: email,
+          providers: 'google',
+          userInfoId: {
+            create: {
+              firstname: firstName,
+              lastname: lastName,
+              gender: 'Male', // Default gender, can be updated later
+              roleId: roleId,
+            },
+          },
+          session: {
+            create: { token: firebaseToken },
+          },
+        },
+        include: {
+          userInfoId: {
+            include: {
+              role: true,
+            },
+          },
+        },
+      });
+
       return {
-        access_token: token,
-        id: user.id,
-        name: user.userInfoId?.firstname || '',
-        email: user.email,
-        role: user.userInfoId?.role?.role || 'public user',
+        access_token: firebaseToken,
+        id: newUser.id,
+        name: newUser.userInfoId?.firstname || '',
+        email: newUser.email,
+        role: newUser.userInfoId?.role?.role || 'public user',
       };
+    } catch (error) {
+      console.error('Google login error:', error);
+      throw new Error(`Google login failed: ${error.message}`);
     }
-
-    // Determine role based on email domain
-    let roleId: number;
-    if (email.endsWith('@darshan.ac.in')) {
-      const studentRole = await this.prisma.userRole.findFirst({
-        where: { role: 'Student' },
-      });
-      roleId = studentRole?.id || 1; // Default to ID 1 if Student role not found
-    } else {
-      const publicRole = await this.prisma.userRole.findFirst({
-        where: { role: 'public user' },
-      });
-      roleId = publicRole?.id || 1; // Default to ID 1 if public user role not found
-    }
-
-    // Extract name from email for userInfo
-    const emailName = email.split('@')[0];
-    const firstName = emailName.split('.')[0] || emailName;
-    const lastName = emailName.split('.')[1] || '';
-
-    // Generate a unique temporary phone number for social login users
-    const timestamp = Date.now();
-    const randomSuffix = Math.floor(Math.random() * 1000);
-    // const tempPhone = `temp_google_${timestamp}_${randomSuffix}`;
-
-    // If user doesn't exist, create a new user with userInfo and appropriate role
-    const newUser = await this.prisma.users.create({
-      data: {
-        email: email,
-        providers: 'google',
-        userInfoId: {
-          create: {
-            firstname: firstName,
-            lastname: lastName,
-            // phone: tempPhone, // Unique temporary phone number
-            gender: 'Male', // Default gender, can be updated later
-            roleId: roleId,
-          },
-        },
-        session: {
-          create: { token: token },
-        },
-      },
-      include: {
-        userInfoId: {
-          include: {
-            role: true,
-          },
-        },
-      },
-    });
-
-    return {
-      access_token: token,
-      id: newUser.id,
-      name: newUser.userInfoId?.firstname || '',
-      email: newUser.email,
-      role: newUser.userInfoId?.role?.role || 'public user',
-    };
   }
 
-  async githubLogin(email: string, token: string) {
-    const user = await this.prisma.users.findUnique({
-      where: { email: email },
-      include: {
-        userInfoId: {
-          include: {
-            role: true,
+  async githubLogin(email: string, firebaseToken: string) {
+    try {
+      // Verify the Firebase token first
+      const decodedToken =
+        await this.firebaseService.verifyIdToken(firebaseToken);
+
+      // Make sure the email from token matches the provided email
+      if (decodedToken.email !== email) {
+        throw new Error('Email mismatch between token and provided email');
+      }
+
+      // Check if user already exists
+      const existingUser = await this.prisma.users.findUnique({
+        where: { email: email },
+        include: {
+          userInfoId: {
+            include: {
+              role: true,
+            },
           },
         },
-      },
-    });
-
-    if (user) {
-      // If user exists, update the token
-      await this.prisma.session.upsert({
-        where: { userId: user.id },
-        update: { token },
-        create: { userId: user.id, token },
       });
+
+      if (existingUser) {
+        // If user exists, update the token
+        await this.prisma.session.upsert({
+          where: { userId: existingUser.id },
+          update: { token: firebaseToken },
+          create: { userId: existingUser.id, token: firebaseToken },
+        });
+
+        return {
+          access_token: firebaseToken,
+          id: existingUser.id,
+          name: existingUser.userInfoId?.firstname || '',
+          email: existingUser.email,
+          role: existingUser.userInfoId?.role?.role || 'public user',
+        };
+      }
+
+      // Use dynamic role assignment based on email domain rules
+      let roleId =
+        await this.enhancedRolesService.assignRoleByEmailDomain(email);
+
+      // If no role matches email domain rules, assign default "public user" role
+      if (!roleId) {
+        const publicRole = await this.prisma.userRole.findFirst({
+          where: { role: 'public user' },
+        });
+
+        if (!publicRole) {
+          throw new Error(
+            'Default "public user" role not found. Please ensure it exists in the database.',
+          );
+        }
+
+        roleId = publicRole.id;
+        console.log(
+          `No email domain rules matched for ${email}, assigned default "public user" role (ID: ${roleId})`,
+        );
+      } else {
+        const assignedRole = await this.prisma.userRole.findUnique({
+          where: { id: roleId },
+        });
+        console.log(
+          `Email domain rule matched for ${email}, assigned "${assignedRole?.role}" role (ID: ${roleId})`,
+        );
+      }
+
+      // Extract name from Firebase token or email
+      const firstName =
+        decodedToken.name?.split(' ')[0] ||
+        email.split('@')[0].split('.')[0] ||
+        'User';
+      const lastName =
+        decodedToken.name?.split(' ').slice(1).join(' ') ||
+        email.split('@')[0].split('.')[1] ||
+        '';
+
+      // Create new user
+      const newUser = await this.prisma.users.create({
+        data: {
+          email: email,
+          providers: 'github',
+          userInfoId: {
+            create: {
+              firstname: firstName,
+              lastname: lastName,
+              gender: 'Male', // Default gender, can be updated later
+              roleId: roleId,
+            },
+          },
+          session: {
+            create: { token: firebaseToken },
+          },
+        },
+        include: {
+          userInfoId: {
+            include: {
+              role: true,
+            },
+          },
+        },
+      });
+
       return {
-        access_token: token,
-        id: user.id,
-        name: user.userInfoId?.firstname || '',
-        email: user.email,
-        role: user.userInfoId?.role?.role || 'public user',
+        access_token: firebaseToken,
+        id: newUser.id,
+        name: newUser.userInfoId?.firstname || '',
+        email: newUser.email,
+        role: newUser.userInfoId?.role?.role || 'public user',
       };
+    } catch (error) {
+      console.error('GitHub login error:', error);
+      throw new Error(`GitHub login failed: ${error.message}`);
     }
-
-    // Determine role based on email domain
-    let roleId: number;
-    if (email.endsWith('@darshan.ac.in')) {
-      const studentRole = await this.prisma.userRole.findFirst({
-        where: { role: 'Student' },
-      });
-      roleId = studentRole?.id || 1; // Default to ID 1 if Student role not found
-    } else {
-      const publicRole = await this.prisma.userRole.findFirst({
-        where: { role: 'public user' },
-      });
-      roleId = publicRole?.id || 1; // Default to ID 1 if public user role not found
-    }
-
-    // Extract name from email for userInfo
-    const emailName = email.split('@')[0];
-    const firstName = emailName.split('.')[0] || emailName;
-    const lastName = emailName.split('.')[1] || '';
-
-    // Generate a unique temporary phone number for social login users
-    const timestamp = Date.now();
-    const randomSuffix = Math.floor(Math.random() * 1000);
-    // const tempPhone = `temp_github_${timestamp}_${randomSuffix}`;
-
-    // If user doesn't exist, create a new user with userInfo and appropriate role
-    const newUser = await this.prisma.users.create({
-      data: {
-        email: email,
-        providers: 'github',
-        userInfoId: {
-          create: {
-            firstname: firstName,
-            lastname: lastName,
-            // phone: tempPhone, // Unique temporary phone number
-            gender: 'Male', // Default gender, can be updated later
-            roleId: roleId,
-          },
-        },
-        session: {
-          create: { token: token },
-        },
-      },
-      include: {
-        userInfoId: {
-          include: {
-            role: true,
-          },
-        },
-      },
-    });
-
-    return {
-      access_token: token,
-      id: newUser.id,
-      name: newUser.userInfoId?.firstname || '',
-      email: newUser.email,
-      role: newUser.userInfoId?.role?.role || 'public user',
-    };
   }
 }
