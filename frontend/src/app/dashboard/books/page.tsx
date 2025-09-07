@@ -199,7 +199,7 @@ export default function BooksPage() {
   // Create book
   const createBook = async () => {
     try {
-      const response = await apiPost("/api/books", formData);
+      const response = await apiPost("/books", formData);
       const result = await response.json();
       toast.success(result.message || "Book created successfully");
       setIsCreateOpen(false);
@@ -216,7 +216,7 @@ export default function BooksPage() {
     if (!editingBook) return;
 
     try {
-      const response = await apiPut(`/api/books/${editingBook.id}`, formData);
+      const response = await apiPut(`/books/${editingBook.id}`, formData);
       const result = await response.json();
       toast.success(result.message || "Book updated successfully");
       setIsEditOpen(false);
@@ -232,7 +232,7 @@ export default function BooksPage() {
   // Delete book
   const deleteBook = async (bookId: string) => {
     try {
-      const response = await apiDelete(`/api/books/${bookId}`);
+      const response = await apiDelete(`/books/${bookId}`);
       const result = await response.json();
       toast.success(result.message || "Book deleted successfully");
       // If we're on the last page and it becomes empty, go to previous page
